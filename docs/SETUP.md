@@ -22,7 +22,7 @@ Repository **secrets**:
 | --- | --- |
 | `TMDB_API_TOKEN` | Already set. TMDB → Settings → API → *API Read Access Token* (the long v4 token). |
 | `CLOUDFLARE_API_TOKEN` | Cloudflare dashboard → My Profile → API Tokens → Create Token → template **Edit Cloudflare Workers**. Account resources: your account. Zone resources: `ismymediaai.com`. Then add the permission **Zone → DNS → Edit** so the deploy can attach the custom domains. |
-| `SUPABASE_ACCESS_TOKEN` | supabase.com → Account (top right) → Access Tokens → Generate new token. Used only to run migrations. |
+| `SUPABASE_ACCESS_TOKEN` | supabase.com → Account (top right) → Access Tokens → Generate new token. Used to run migrations (no database password needed). |
 
 Repository **variables** (not secret):
 
@@ -36,7 +36,6 @@ Open each environment (**Settings → Environments → staging / production**) a
 
 | Name | Kind | Where to get it |
 | --- | --- | --- |
-| `SUPABASE_DB_PASSWORD` | secret | The database password you chose when creating that Supabase project. Forgot it? Project → Database → Settings → Reset database password. |
 | `SUPABASE_SECRET_KEY` | secret | Project → Project Settings → API Keys → **Secret keys** (`sb_secret_…`). Create one named `github-actions`. |
 | `SUPABASE_PUBLISHABLE_KEY` | variable | Project → Project Settings → API Keys → **Publishable key** (`sb_publishable_…`). Public by design. |
 
