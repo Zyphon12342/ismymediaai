@@ -1,0 +1,34 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Local preview (`npm run preview`). Deployed Workers are the `staging` and
+  // `production` environments below, deployed only by GitHub Actions.
+  "name": "ismymediaai-local",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": { "enabled": true },
+  "upload_source_maps": true,
+  "workers_dev": false,
+  "vars": {
+    "APP_ENV": "local"
+  },
+  "env": {
+    "staging": {
+      "name": "ismymediaai-staging",
+      "routes": [{ "pattern": "staging.ismymediaai.com", "custom_domain": true }],
+      "vars": { "APP_ENV": "staging" }
+    },
+    "production": {
+      "name": "ismymediaai",
+      "routes": [
+        { "pattern": "ismymediaai.com", "custom_domain": true },
+        { "pattern": "www.ismymediaai.com", "custom_domain": true }
+      ],
+      "vars": { "APP_ENV": "production" }
+    }
+  }
+}

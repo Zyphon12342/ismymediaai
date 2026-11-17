@@ -1,0 +1,63 @@
+-- Shared helpers for pgTAP tests. Included with \ir from each test file and
+-- created inside that file's transaction, so they vanish on rollback.
+create extension if not exists pgtap with schema extensions;
+create schema if not exists tests;
+grant usage on schema tests to anon, authenticated;
+
+-- Create an auth user (the profile is created by trigger) and set its standing.
+create or replace function tests.create_user(
+  p_handle text,
+  p_verified boolean default true,
+  p_trust smallint default 1,
+  p_role public.user_role default 'user'
+) returns uuid language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := gen_random_uuid();
+begin
+  insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
+  values (uid, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
+          p_handle || '@example.test', '', case when p_verified then now() end, now(), now());
+  update public.profiles set handle = p_handle, trust_level = p_trust, role = p_role, handle_changed_at = null
+  where id = uid;
+  return uid;
+end;
+$$;
+
+-- Act as a signed-in user for the following statements.
+create or replace function tests.authenticate_as(uid uuid) returns void
+language plpgsql as $$
+begin
+  perform set_config('request.jwt.claims', json_build_object('sub', uid, 'role', 'authenticated')::text, true);
+  perform set_config('role', 'authenticated', true);
+end;
+$$;
+
+create or replace function tests.as_anon() returns void
+language plpgsql as $$
+begin
+  perform set_config('request.jwt.claims', json_build_object('role', 'anon')::text, true);
+  perform set_config('role', 'anon', true);
+end;
+$$;
+
+-- Insert a published catalogue title directly (as postgres).
+create or replace function tests.create_media(
+  p_slug text,
+  p_kind public.media_kind default 'movie',
+  p_status public.content_status default 'published'
+) returns uuid language plpgsql security definer set search_path = '' as $$
+declare
+  mid uuid;
+begin
+  insert into public.media (kind, slug, title, source, external_id, status)
+  values (p_kind, p_slug, initcap(replace(p_slug, '-', ' ')), 'tmdb', p_slug, p_status)
+  returning id into mid;
+  return mid;
+end;
+$$;
+
+grant execute on all functions in schema tests to anon, authenticated;
+
+create or replace function tests.clear_claims() returns void
+language sql as $$ select set_config('request.jwt.claims', '', true); $$;
+grant execute on function tests.clear_claims() to anon, authenticated;

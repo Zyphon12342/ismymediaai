@@ -1,0 +1,11 @@
+# Extend the default rules; allow only the public, well-known keys of the
+# local Supabase CLI stack (they work on localhost only).
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Supabase CLI local demo keys"
+regexes = [
+  '''sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH''',
+  '''sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz''',
+]
