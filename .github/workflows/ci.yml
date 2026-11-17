@@ -122,8 +122,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # GitHub code scanning (CodeQL) needs a paid plan on private repos, so
-  # static analysis runs with the free Semgrep CE and fails on any finding.
+  # Complements CodeQL (codeql.yml) with React/Next.js rules; fails on any finding.
   sast:
     name: Static analysis (Semgrep)
     runs-on: ubuntu-latest
