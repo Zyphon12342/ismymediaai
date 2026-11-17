@@ -11,6 +11,7 @@ on:
 permissions:
   contents: read
   statuses: write
+  pull-requests: read # for the reused CI's secret scan
 
 concurrency:
   group: deploy-staging
