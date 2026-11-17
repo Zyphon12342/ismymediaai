@@ -8,6 +8,7 @@ on:
     - cron: "30 4 * * 1"
 
 permissions:
+  actions: read # CodeQL reads the workflow run it belongs to
   contents: read
   security-events: write
 
