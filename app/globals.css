@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  /* Vote colours: orange = uses gen AI, blue = no gen AI (colour-blind safe pair). */
+  --color-vote-ai: #ea580c;
+  --color-vote-no-ai: #2563eb;
+  --color-vote-unsure: #a1a1aa;
+}
+
+body {
+  font-family: var(--font-sans);
+}

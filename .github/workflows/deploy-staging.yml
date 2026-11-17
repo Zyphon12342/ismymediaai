@@ -1,0 +1,98 @@
+name: Deploy to staging
+
+# Every merge to main: CI again on the merged commit, migrate the staging
+# database, deploy the staging Worker, smoke test it, then mark the commit
+# "staging-verified" so promote-prod.yml will accept it.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  statuses: write
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    needs: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: staging
+      url: https://staging.ismymediaai.com
+    env:
+      SUPABASE_PROJECT_REF: raytxskehcrnbvyeebbf
+      SITE_URL: https://staging.ismymediaai.com
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+
+      - name: Apply database migrations to staging
+        run: |
+          npx supabase link --project-ref "$SUPABASE_PROJECT_REF"
+          npx supabase db push --include-all
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+
+      - name: Build the Worker for staging
+        run: npm run build:worker
+        env:
+          NEXT_PUBLIC_APP_ENV: staging
+          NEXT_PUBLIC_SITE_URL: ${{ env.SITE_URL }}
+          NEXT_PUBLIC_SUPABASE_URL: https://${{ env.SUPABASE_PROJECT_REF }}.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_BUILD_SHA: ${{ github.sha }}
+
+      - name: Deploy the staging Worker
+        run: |
+          umask 077
+          jq -n \
+            --arg SUPABASE_SECRET_KEY "$SUPABASE_SECRET_KEY" \
+            --arg TMDB_API_TOKEN "$TMDB_API_TOKEN" \
+            '{SUPABASE_SECRET_KEY: $SUPABASE_SECRET_KEY, TMDB_API_TOKEN: $TMDB_API_TOKEN}' > "$RUNNER_TEMP/secrets.json"
+          npx opennextjs-cloudflare deploy --env staging -- --secrets-file "$RUNNER_TEMP/secrets.json"
+          rm -f "$RUNNER_TEMP/secrets.json"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          TMDB_API_TOKEN: ${{ secrets.TMDB_API_TOKEN }}
+
+      - name: Wait for the new version to serve
+        run: |
+          for i in $(seq 1 30); do
+            commit=$(curl -fsS "$SITE_URL/api/health" | jq -r .commit || true)
+            [ "$commit" = "$GITHUB_SHA" ] && exit 0
+            sleep 5
+          done
+          echo "::error::staging did not report commit $GITHUB_SHA"
+          exit 1
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: Smoke tests against staging
+        run: npm run test:smoke
+        env:
+          BASE_URL: ${{ env.SITE_URL }}
+
+      - name: Mark commit as staging-verified
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            -d "{\"state\":\"success\",\"context\":\"staging-verified\",\"description\":\"Smoke tests passed on staging\",\"target_url\":\"$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
