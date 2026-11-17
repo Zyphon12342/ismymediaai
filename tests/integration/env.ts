@@ -6,6 +6,8 @@ export const APP_URL = process.env.APP_URL ?? "http://localhost:3000";
 export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "http://127.0.0.1:54321";
 export const PUBLISHABLE_KEY =
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH";
+// The Supabase CLI's fixed local default, identical on every machine and only
+// valid against 127.0.0.1. Real keys live in GitHub environment secrets.
 export const SECRET_KEY = process.env.SUPABASE_SECRET_KEY ?? "sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz";
 
 if (!/^(http:\/\/(127\.0\.0\.1|localhost))/.test(SUPABASE_URL)) {
