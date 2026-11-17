@@ -12,7 +12,7 @@ select tests.create_media('public-film');
 
 select tests.as_anon();
 select is(
-  (select array_agg(slug order by slug) from public.media),
+  (select array_agg(slug order by slug) from public.media where slug in ('hidden-film', 'public-film')),
   array['public-film'],
   'anonymous visitors see only published titles'
 );

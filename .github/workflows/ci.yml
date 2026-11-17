@@ -51,7 +51,9 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Start local Supabase and apply migrations
-        run: npx supabase start -x "$SUPABASE_EXCLUDE"
+        # No mail catcher here: policy tests send no email, and its port has
+        # collided with something already on the runner.
+        run: npx supabase start -x "$SUPABASE_EXCLUDE,mailpit"
       - name: pgTAP policy tests
         run: npx supabase test db
       - name: Generated types match the schema
