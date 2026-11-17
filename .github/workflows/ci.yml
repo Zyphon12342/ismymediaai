@@ -121,3 +121,22 @@ jobs:
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # GitHub code scanning (CodeQL) needs a paid plan on private repos, so
+  # static analysis runs with the free Semgrep CE and fails on any finding.
+  sast:
+    name: Static analysis (Semgrep)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: semgrep/semgrep:latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Semgrep
+        run: >
+          semgrep scan --error --metrics off
+          --config p/javascript --config p/typescript --config p/react
+          --config p/nextjs --config p/github-actions
+          --exclude lib/database.types.ts
+        env:
+          SEMGREP_SEND_METRICS: "off"

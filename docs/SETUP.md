@@ -51,7 +51,7 @@ and site URLs are already in the workflows.
 - Restrict deletions, block force pushes.
 - Require a pull request before merging.
 - Require status checks to pass: `Lint, types, unit tests`, `Database policies (pgTAP) and types`,
-  `Worker build, integration and end-to-end`, `Secret scan (gitleaks)`, `analyze (javascript-typescript)`.
+  `Worker build, integration and end-to-end`, `Secret scan (gitleaks)`, `Static analysis (Semgrep)`.
   (They appear in the picker after the first CI run.)
 
 ## 5. Supabase project settings (both projects)
