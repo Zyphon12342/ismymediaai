@@ -112,3 +112,9 @@ test("callback links cannot redirect off-site", async ({ page }) => {
   await expect(page).toHaveURL(/\/auth\/error/);
   expect(new URL(page.url()).host).not.toContain("evil.example");
 });
+
+test("a link opened in another browser explains what happened", async ({ page }) => {
+  await page.goto("/auth/error?reason=pkce_code_verifier_not_found");
+  await expect(page.getByRole("heading", { name: "Opened in a different browser" })).toBeVisible();
+  await expect(page.getByText(/it's confirmed: sign in below/)).toBeVisible();
+});
