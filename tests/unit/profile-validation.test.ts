@@ -62,7 +62,7 @@ describe("avatar images", () => {
     expect(avatarExtension("image/png")).toBe("png");
     expect(avatarExtension("image/jpeg")).toBe("jpg");
     expect(avatarExtension("image/gif")).toBeNull();
-    expect(avatarObjectPath(uid, "webp", "a-b_c/../d")).toBe(`${uid}/a-b_c..d.webp`.replace("..", ""));
+    expect(avatarObjectPath(uid, "webp", "a-b_c/../d")).toBe(`${uid}/a-b_cd.webp`);
   });
 });
 
