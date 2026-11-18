@@ -129,4 +129,5 @@ language sql stable security invoker set search_path = '' as $$
   order by m.created_at
   limit 20;
 $$;
+revoke all on function public.similar_titles(public.media_kind[], text[]) from public, anon;
 grant execute on function public.similar_titles(public.media_kind[], text[]) to authenticated, service_role;
