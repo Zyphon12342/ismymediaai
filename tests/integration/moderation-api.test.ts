@@ -85,6 +85,30 @@ describe("reports and the moderator queue", () => {
     expect(page.headers.get("location") ?? "").toContain(`/titles/${keepSlug}`);
   });
 
+  it("takes a correction request from a signed-out visitor and lets a moderator resolve it", async () => {
+    const id = await publishedTitle(`it-fix-${crypto.randomUUID().slice(0, 8)}`);
+    const email = `legal-${crypto.randomUUID().slice(0, 8)}@studio.example`;
+    const request = { mediaId: id, name: "Studio Legal", email, relationship: "rights_holder", message: "No generative AI was used.", evidenceUrl: "https://studio.example/statement" };
+    expect((await send(null, "/api/corrections", "POST", { ...request, email: "nope" })).status).toBe(422);
+    expect((await send(null, "/api/corrections", "POST", { ...request, mediaId: crypto.randomUUID() })).status).toBe(404);
+    expect((await send(null, "/api/corrections", "POST", request)).status).toBe(201);
+
+    const member = await namedUser("mfixer");
+    type Fixes = { corrections: { id: string; email: string; media: { title: string } | null }[] };
+    expect((await send(member.cookie, "/api/mod/queue", "GET")).status).toBe(403);
+    const mod = await moderator("mfixmod");
+    const queue = (await (await send(mod.cookie, "/api/mod/queue", "GET")).json()) as Fixes;
+    const item = queue.corrections.find((c) => c.email === email);
+    expect(item?.media).not.toBeNull();
+
+    expect((await send(member.cookie, `/api/mod/corrections/${item!.id}`, "POST", { status: "resolved" })).status).toBe(403);
+    expect((await send(mod.cookie, `/api/mod/corrections/${item!.id}`, "POST", { status: "maybe" })).status).toBe(422);
+    expect((await send(mod.cookie, `/api/mod/corrections/${item!.id}`, "POST", { status: "resolved", note: "Fixed credits" })).status).toBe(201);
+    expect((await send(mod.cookie, `/api/mod/corrections/${item!.id}`, "POST", { status: "declined" })).status).toBe(404);
+    const after = (await (await send(mod.cookie, "/api/mod/queue", "GET")).json()) as Fixes;
+    expect(after.corrections.find((c) => c.email === email)).toBeUndefined();
+  });
+
   it("validates input", async () => {
     const mod = await moderator("mval");
     expect((await send(mod.cookie, "/api/mod/actions", "POST", { action: "merge", targetType: "media", targetId: crypto.randomUUID() })).status).toBe(422);

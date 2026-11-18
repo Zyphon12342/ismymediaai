@@ -92,6 +92,18 @@ export async function deleteTitle(source: string, externalId: string) {
   });
 }
 
+/** Insert a published title straight into the database and return its slug. */
+export async function publishedTitle(prefix: string): Promise<string> {
+  const slug = `${prefix}-${crypto.randomUUID().slice(0, 8)}`;
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/media`, {
+    method: "POST",
+    headers: { apikey: SECRET_KEY, Authorization: `Bearer ${SECRET_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ kind: "movie", slug, title: `Correction Test ${slug}`, source: "manual", status: "published" }),
+  });
+  if (!res.ok) throw new Error(`could not create title: ${res.status}`);
+  return slug;
+}
+
 export async function signIn(page: Page, email: string, password: string, next = "/") {
   await page.goto(`/sign-in?next=${encodeURIComponent(next)}`);
   await page.getByLabel("Email").fill(email);

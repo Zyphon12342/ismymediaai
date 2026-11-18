@@ -51,6 +51,38 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"correction_requests": {
+                  Row: {
+                    "created_at": string,"email": string,"evidence_url": string | null,"handled_at": string | null,"handled_by": string | null,"id": string,"media_id": string,"message": string,"name": string,"relationship": string,"requester_id": string | null,"resolution_note": string | null,"status": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"email": string,"evidence_url"?: string | null,"handled_at"?: string | null,"handled_by"?: string | null,"id"?: string,"media_id": string,"message": string,"name": string,"relationship": string,"requester_id"?: string | null,"resolution_note"?: string | null,"status"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"email"?: string,"evidence_url"?: string | null,"handled_at"?: string | null,"handled_by"?: string | null,"id"?: string,"media_id"?: string,"message"?: string,"name"?: string,"relationship"?: string,"requester_id"?: string | null,"resolution_note"?: string | null,"status"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "correction_requests_handled_by_fkey"
+      columns: ["handled_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "correction_requests_media_id_fkey"
+      columns: ["media_id"]
+isOneToOne: false
+      referencedRelation: "media"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "correction_requests_requester_id_fkey"
+      columns: ["requester_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"credits": {
                   Row: {
                     "billing_order": number | null,"character_name": string | null,"contributor_id": string,"media_id": string,"role": Database["public"]['Enums']["credit_role"]
@@ -291,6 +323,9 @@ isOneToOne: false
 "handle_available":
 { Args: { "p_handle": string }; Returns: boolean
                            },
+"handle_correction":
+{ Args: { "p_id": string,"p_note"?: string,"p_status": string }; Returns: number
+                           },
 "merge_media":
 { Args: { "p_from": string,"p_into": string,"p_reason"?: string }; Returns: number
                            },
@@ -326,6 +361,9 @@ isOneToOne: false
               "cover_url": string,"id": string,"kind": Database["public"]['Enums']["media_kind"],"release_year": number,"shared_genres": number,"shared_people": (string)[],"slug": string,"title": string
             }[]
                            },
+"request_correction":
+{ Args: { "p_email": string,"p_evidence_url"?: string,"p_media": string,"p_message": string,"p_name": string,"p_relationship": string }; Returns: string
+                           },
 "sitemap_media":
 { Args: { "p_limit"?: number,"p_offset"?: number }; Returns: {
               "slug": string,"updated_at": string
@@ -338,7 +376,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "ai_area": "writing"|"visuals"|"cover_art"|"voice"|"music"|"translation"|"marketing"|"other","content_status": "published"|"pending"|"hidden"|"removed","contributor_kind": "person"|"company","credit_role": "actor"|"director"|"creator"|"writer"|"showrunner"|"composer"|"author"|"illustrator"|"translator"|"studio"|"network"|"publisher","media_kind": "movie"|"tv_show"|"book","media_source": "tmdb"|"openlibrary"|"manual","mod_action_type": "hide"|"restore"|"remove"|"ban"|"unban"|"set_trust"|"set_role"|"merge"|"edit"|"lock_comments"|"dismiss_report","report_reason": "spam"|"harassment"|"unsupported_claim"|"duplicate"|"wrong_details"|"other"|"vote_spike","report_status": "open"|"actioned"|"dismissed","report_target": "media"|"comment"|"profile","user_role": "user"|"moderator"|"admin","vote_value": "uses_ai"|"no_ai"|"unsure"
+            "ai_area": "writing"|"visuals"|"cover_art"|"voice"|"music"|"translation"|"marketing"|"other","content_status": "published"|"pending"|"hidden"|"removed","contributor_kind": "person"|"company","credit_role": "actor"|"director"|"creator"|"writer"|"showrunner"|"composer"|"author"|"illustrator"|"translator"|"studio"|"network"|"publisher","media_kind": "movie"|"tv_show"|"book","media_source": "tmdb"|"openlibrary"|"manual","mod_action_type": "hide"|"restore"|"remove"|"ban"|"unban"|"set_trust"|"set_role"|"merge"|"edit"|"lock_comments"|"dismiss_report"|"handle_correction","report_reason": "spam"|"harassment"|"unsupported_claim"|"duplicate"|"wrong_details"|"other"|"vote_spike","report_status": "open"|"actioned"|"dismissed","report_target": "media"|"comment"|"profile","user_role": "user"|"moderator"|"admin","vote_value": "uses_ai"|"no_ai"|"unsure"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -454,7 +492,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "ai_area": ["writing", "visuals", "cover_art", "voice", "music", "translation", "marketing", "other"],"content_status": ["published", "pending", "hidden", "removed"],"contributor_kind": ["person", "company"],"credit_role": ["actor", "director", "creator", "writer", "showrunner", "composer", "author", "illustrator", "translator", "studio", "network", "publisher"],"media_kind": ["movie", "tv_show", "book"],"media_source": ["tmdb", "openlibrary", "manual"],"mod_action_type": ["hide", "restore", "remove", "ban", "unban", "set_trust", "set_role", "merge", "edit", "lock_comments", "dismiss_report"],"report_reason": ["spam", "harassment", "unsupported_claim", "duplicate", "wrong_details", "other", "vote_spike"],"report_status": ["open", "actioned", "dismissed"],"report_target": ["media", "comment", "profile"],"user_role": ["user", "moderator", "admin"],"vote_value": ["uses_ai", "no_ai", "unsure"]
+            "ai_area": ["writing", "visuals", "cover_art", "voice", "music", "translation", "marketing", "other"],"content_status": ["published", "pending", "hidden", "removed"],"contributor_kind": ["person", "company"],"credit_role": ["actor", "director", "creator", "writer", "showrunner", "composer", "author", "illustrator", "translator", "studio", "network", "publisher"],"media_kind": ["movie", "tv_show", "book"],"media_source": ["tmdb", "openlibrary", "manual"],"mod_action_type": ["hide", "restore", "remove", "ban", "unban", "set_trust", "set_role", "merge", "edit", "lock_comments", "dismiss_report", "handle_correction"],"report_reason": ["spam", "harassment", "unsupported_claim", "duplicate", "wrong_details", "other", "vote_spike"],"report_status": ["open", "actioned", "dismissed"],"report_target": ["media", "comment", "profile"],"user_role": ["user", "moderator", "admin"],"vote_value": ["uses_ai", "no_ai", "unsure"]
           }
         }
 } as const

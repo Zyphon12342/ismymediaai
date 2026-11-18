@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { ACTIONS_FOR, MOD_ACTION_LABELS, REASONS_FOR, REPORT_REASON_LABELS, moderationErrorMessage, slugFromTitleRef } from "@/lib/services/moderation";
 import { MergeInput, ModActionInput, ReportInput } from "@/lib/validation/moderation";
+import { CorrectionInput, HandleCorrectionInput } from "@/lib/validation/corrections";
+import { correctionPath } from "@/lib/services/corrections";
 
 const id = "0b7b7c3e-1111-4a2b-9c3d-1234567890ab";
 
@@ -76,5 +78,32 @@ describe("merging duplicates", () => {
   it("explains merge errors", () => {
     expect(moderationErrorMessage("22023", "both titles must be the same kind")).toMatch(/same kind/);
     expect(moderationErrorMessage("22023", "that title was already merged")).toBe("That title was already merged.");
+  });
+});
+
+describe("correction requests", () => {
+  const ok = { mediaId: "00000000-0000-4000-8000-000000000000", name: " Studio ", email: "legal@studio.example", relationship: "rights_holder", message: "No generative AI was used." };
+
+  it("accepts a request and trims it", () => {
+    const r = CorrectionInput.parse({ ...ok, evidenceUrl: "" });
+    expect(r.name).toBe("Studio");
+    expect(r.evidenceUrl).toBeNull();
+  });
+
+  it("needs a real email, a short explanation and an https evidence link", () => {
+    expect(CorrectionInput.safeParse({ ...ok, email: "nope" }).success).toBe(false);
+    expect(CorrectionInput.safeParse({ ...ok, message: "bad" }).success).toBe(false);
+    expect(CorrectionInput.safeParse({ ...ok, evidenceUrl: "http://studio.example" }).success).toBe(false);
+    expect(CorrectionInput.safeParse({ ...ok, relationship: "fan" }).success).toBe(false);
+    expect(CorrectionInput.safeParse({ ...ok, extra: 1 }).success).toBe(false);
+  });
+
+  it("only resolves or declines", () => {
+    expect(HandleCorrectionInput.safeParse({ status: "resolved", note: "" }).data?.note).toBeNull();
+    expect(HandleCorrectionInput.safeParse({ status: "open" }).success).toBe(false);
+  });
+
+  it("links to the form under the title", () => {
+    expect(correctionPath("dune-2021")).toBe("/titles/dune-2021/correction");
   });
 });

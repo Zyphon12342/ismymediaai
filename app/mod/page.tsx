@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { CorrectionActions } from "@/components/moderation/correction-actions";
 import { MergeTitle } from "@/components/moderation/merge-title";
 import { ModActions } from "@/components/moderation/mod-actions";
 import { getModQueue } from "@/lib/data/moderation";
@@ -8,6 +9,7 @@ import { getMyProfile } from "@/lib/data/profiles";
 import { formatDate } from "@/lib/services/account";
 import { KIND_LABELS, profilePath, titlePath } from "@/lib/services/labels";
 import { QUEUE_REASON_LABELS } from "@/lib/services/moderation";
+import { RELATIONSHIP_LABELS } from "@/lib/services/corrections";
 import { hasVerifiedFactor } from "@/lib/data/mfa";
 import { needsStepUp, stepUpPath } from "@/lib/services/mfa";
 import { createClient } from "@/lib/supabase/server";
@@ -22,7 +24,7 @@ export default async function ModQueuePage() {
   if (!me) redirect("/sign-in?next=/mod");
   if (me.role === "user" || !me.emailVerified) notFound();
   if (needsStepUp(me.role, me.aal)) redirect(stepUpPath(await hasVerifiedFactor(db), "/mod"));
-  const { items, pending } = await getModQueue(db);
+  const { items, pending, corrections } = await getModQueue(db);
 
   return (
     <div className="space-y-10">
@@ -86,6 +88,44 @@ export default async function ModQueuePage() {
               {i.preview?.kind === "media" && i.reports.some((r) => r.reason === "duplicate") ? (
                 <MergeTitle fromId={i.targetId} title={i.preview.title} />
               ) : null}
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section aria-labelledby="corrections-heading" className="space-y-4">
+        <h2 id="corrections-heading" className="text-lg font-semibold">
+          Correction requests <span className="font-normal text-zinc-600">({corrections.length})</span>
+        </h2>
+        {corrections.length === 0 ? (
+          <p className="text-sm text-zinc-600">None open. Rights holders and visitors send these from the &quot;Request a correction&quot; link on a title.</p>
+        ) : null}
+        <ol className="space-y-4">
+          {corrections.map((c) => (
+            <li key={c.id} className="space-y-3 rounded-lg border border-zinc-200 p-4">
+              <p className="text-sm">
+                {c.media ? (
+                  <Link href={titlePath(c.media.slug)} className="font-medium underline">
+                    {c.media.title}
+                  </Link>
+                ) : (
+                  "A removed title"
+                )}{" "}
+                <span className="text-zinc-600">· {formatDate(new Date(c.createdAt))}</span>
+              </p>
+              <p className="text-xs text-zinc-700">
+                From {c.name} (<a href={`mailto:${c.email}`} className="underline">{c.email}</a>) · {RELATIONSHIP_LABELS[c.relationship]}
+              </p>
+              <p className="whitespace-pre-wrap break-words text-sm text-zinc-800">{c.message}</p>
+              {c.evidenceUrl ? (
+                <p className="break-all text-xs">
+                  Evidence:{" "}
+                  <a href={c.evidenceUrl} rel="noopener noreferrer nofollow ugc" target="_blank" className="underline">
+                    {c.evidenceUrl}
+                  </a>
+                </p>
+              ) : null}
+              <CorrectionActions id={c.id} />
             </li>
           ))}
         </ol>

@@ -24,6 +24,17 @@ export interface QueueItem {
     | null;
 }
 
+export interface CorrectionItem {
+  id: string;
+  name: string;
+  email: string;
+  relationship: "rights_holder" | "creator" | "representative" | "other";
+  message: string;
+  evidenceUrl: string | null;
+  createdAt: string;
+  media: { slug: string; title: string } | null;
+}
+
 export interface PendingEntry {
   id: string;
   slug: string;
@@ -39,7 +50,7 @@ export interface PendingEntry {
  * for review. Row Level Security returns nothing unless the caller is a
  * moderator.
  */
-export async function getModQueue(db: DbClient): Promise<{ items: QueueItem[]; pending: PendingEntry[] }> {
+export async function getModQueue(db: DbClient): Promise<{ items: QueueItem[]; pending: PendingEntry[]; corrections: CorrectionItem[] }> {
   const { data: reports, error } = await db
     .from("reports")
     .select("id, target_type, target_id, reason, note, created_at, reporter:profiles!reports_reporter_id_fkey(handle)")
@@ -58,7 +69,7 @@ export async function getModQueue(db: DbClient): Promise<{ items: QueueItem[]; p
   const items = [...groups.values()];
   const ids = (t: QueueItem["targetType"]) => items.filter((i) => i.targetType === t).map((i) => i.targetId);
 
-  const [comments, media, profiles, pending] = await Promise.all([
+  const [comments, media, profiles, pending, corrections] = await Promise.all([
     ids("comment").length
       ? db
           .from("comments")
@@ -77,8 +88,14 @@ export async function getModQueue(db: DbClient): Promise<{ items: QueueItem[]; p
       .eq("status", "pending")
       .order("created_at", { ascending: true })
       .limit(100),
+    db
+      .from("correction_requests")
+      .select("id, name, email, relationship, message, evidence_url, created_at, media(slug, title)")
+      .eq("status", "open")
+      .order("created_at", { ascending: true })
+      .limit(100),
   ]);
-  for (const res of [comments, media, profiles, pending]) if (res.error) throw res.error;
+  for (const res of [comments, media, profiles, pending, corrections]) if (res.error) throw res.error;
 
   for (const i of items) {
     if (i.targetType === "comment") {
@@ -99,6 +116,16 @@ export async function getModQueue(db: DbClient): Promise<{ items: QueueItem[]; p
 
   return {
     items,
+    corrections: (corrections.data ?? []).map((c) => ({
+      id: c.id,
+      name: c.name,
+      email: c.email,
+      relationship: c.relationship as CorrectionItem["relationship"],
+      message: c.message,
+      evidenceUrl: c.evidence_url,
+      createdAt: c.created_at,
+      media: c.media ? { slug: c.media.slug, title: c.media.title } : null,
+    })),
     pending: (pending.data ?? []).map((m) => ({
       id: m.id,
       slug: m.slug,
