@@ -2,7 +2,7 @@ import { KIND_LABELS } from "@/lib/services/labels";
 
 type Kind = keyof typeof KIND_LABELS;
 
-/** Poster or book cover from TMDB / Open Library, or a plain placeholder. */
+/** Poster or book cover from TMDB / Open Library / AniList, or a plain placeholder. */
 export function Cover({ url, title, kind, className = "" }: { url: string | null; title: string; kind: Kind; className?: string }) {
   if (url) {
     // Catalogue images arrive pre-sized; Cloudflare image resizing is not used (cost).

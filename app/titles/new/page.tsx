@@ -23,7 +23,7 @@ export default async function NewTitlePage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Add a title</h1>
         <p className="mt-1 text-sm text-zinc-600">
-          Find it in TMDB (movies and TV) or Open Library (books). You can add up to 5 titles a day.
+          Find it in TMDB (movies and TV), Open Library (books) or AniList (anime and manga). You can add up to 5 titles a day.
         </p>
       </div>
       {allowed ? (

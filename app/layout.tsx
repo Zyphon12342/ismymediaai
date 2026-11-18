@@ -34,7 +34,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             </p>
             <p>
               Film and TV data from TMDB. This product uses the TMDB API but is not endorsed or certified by TMDB. Book
-              data from Open Library.
+              data from Open Library. Anime and manga data from AniList.
             </p>
           </div>
         </footer>

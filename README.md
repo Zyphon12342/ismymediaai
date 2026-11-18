@@ -32,7 +32,7 @@ npm run dev           # http://localhost:3000
 ```
 app/                 pages and app/api route handlers (thin)
 lib/services/        business logic, pure functions (unit tested)
-lib/catalog/         TMDB and Open Library clients (fixtures for local previews and CI)
+lib/catalog/         TMDB, Open Library and AniList clients (fixtures for local previews and CI)
 lib/data/            typed queries used by pages and routes (user token, RLS applies)
 components/          React components
 lib/validation/      Zod schemas shared by forms and the API
@@ -57,4 +57,4 @@ See [docs/SETUP.md](docs/SETUP.md) for secrets and one-time setup, and
 [docs/DATABASE.md](docs/DATABASE.md) for schema rules.
 
 Film and TV data from TMDB. This product uses the TMDB API but is not endorsed or certified by TMDB.
-Book data from Open Library.
+Book data from Open Library. Anime and manga data from AniList.

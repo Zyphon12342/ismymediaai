@@ -97,6 +97,37 @@ test("vote on a title, change it, and see it on your profile", async ({ page }) 
   await expect(page.getByRole("link", { name: /Example Street/ })).toBeVisible();
 });
 
+test("add an anime from AniList, and see a hint when a TV show may be the same work", async ({ page }) => {
+  await deleteTitle("anilist", "anime/920001");
+  const u = await trustedUser("otaku");
+  await signIn(page, u.email, u.password, "/titles/new");
+  await page.getByRole("radio", { name: "Anime" }).check({ force: true });
+  await expect(page.getByRole("tab", { name: "Search AniList" })).toBeVisible();
+
+  // "Example Street" was added as a TV show in the test above.
+  await page.getByLabel("Title to look up").fill("example street");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  const twin = page.getByRole("listitem").filter({ hasText: "Example Street (2030)" });
+  await expect(twin.getByText("May already be here as a tv show:")).toBeVisible();
+  await expect(twin.getByRole("link", { name: "Example Street (2030)" })).toHaveAttribute("href", /\/titles\/example-street-2030/);
+  expect((await new AxeBuilder({ page }).withTags(WCAG).analyze()).violations).toEqual([]);
+
+  await page.getByLabel("Title to look up").fill("placeholder academy");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await page.getByRole("button", { name: "Select Placeholder Academy (2034)" }).click();
+  await expect(page.getByRole("checkbox", { name: "Comedy" })).toBeChecked();
+  await expect(page.getByRole("checkbox", { name: "Slice of life" })).toBeChecked();
+  await page.getByRole("button", { name: "Add title" }).click();
+
+  await expect(page).toHaveURL(/\/titles\/placeholder-academy-2034/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Is Placeholder Academy (2034) AI-generated?");
+  await expect(page.getByRole("region", { name: "Credits" }).getByText("Studio Fixture")).toBeVisible();
+  await expect(page.getByRole("link", { name: "AniList" })).toHaveAttribute("href", "https://anilist.co/anime/920001");
+
+  await page.goto("/?kind=anime");
+  await expect(page.getByRole("link", { name: /Placeholder Academy/ })).toBeVisible();
+});
+
 test("comment with evidence, reply, edit, link and delete", async ({ page }) => {
   const u = await trustedUser("commenter");
   await signIn(page, u.email, u.password, "/titles/example-street-2030");

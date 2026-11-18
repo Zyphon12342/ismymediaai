@@ -15,7 +15,7 @@ import { getMyProfile } from "@/lib/data/profiles";
 import { publicEnv } from "@/lib/env";
 import { needsCommentTurnstile } from "@/lib/services/comments";
 import { correctionPath } from "@/lib/services/corrections";
-import { KIND_LABELS, titlePath } from "@/lib/services/labels";
+import { KIND_LABELS, sourceName, titlePath } from "@/lib/services/labels";
 import { groupCredits, roleLabel } from "@/lib/services/media";
 import { faqJsonLd, relatedReason, titleFaq, titleQuestion, workJsonLd } from "@/lib/services/seo";
 import { sourceUrl, verdictSentence } from "@/lib/services/verdict";
@@ -199,7 +199,7 @@ export default async function TitlePage({ params, searchParams }: PageProps<"/ti
           <>
             Details from{" "}
             <a href={src} rel="noopener noreferrer" target="_blank" className="underline">
-              {m.source === "tmdb" ? "TMDB" : "Open Library"}
+              {sourceName(m.source)}
             </a>
             .
           </>

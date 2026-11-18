@@ -46,7 +46,8 @@ export function titleFaq(opts: { title: string; year: number | null; kind: Kind;
   ];
 }
 
-const SCHEMA_TYPES: Record<Kind, string> = { movie: "Movie", tv_show: "TVSeries", book: "Book" };
+// Anime is mostly series and manga is published as books; schema.org has no closer types that search engines use.
+const SCHEMA_TYPES: Record<Kind, string> = { movie: "Movie", tv_show: "TVSeries", book: "Book", anime: "TVSeries", manga: "Book" };
 
 export function faqJsonLd(faq: Faq[]): Record<string, unknown> {
   return {
@@ -56,7 +57,7 @@ export function faqJsonLd(faq: Faq[]): Record<string, unknown> {
   };
 }
 
-/** The work itself, so search engines tie the page to the right film, show or book. */
+/** The work itself, so search engines tie the page to the right film, show, book, anime or manga. */
 export function workJsonLd(opts: {
   url: string;
   title: string;
@@ -75,7 +76,7 @@ export function workJsonLd(opts: {
     name: opts.title,
     url: opts.url,
   };
-  if (opts.year) out[opts.kind === "tv_show" ? "startDate" : "datePublished"] = String(opts.year);
+  if (opts.year) out[opts.kind === "tv_show" || opts.kind === "anime" ? "startDate" : "datePublished"] = String(opts.year);
   if (opts.coverUrl) out.image = opts.coverUrl;
   if (opts.synopsis) out.description = opts.synopsis.slice(0, 500);
   if (opts.genres.length) out.genre = opts.genres;
@@ -84,9 +85,9 @@ export function workJsonLd(opts: {
   const authors = names(["author"]);
   const actors = names(["actor"]).slice(0, 10);
   if (opts.kind === "movie" && directors.length) out.director = directors;
-  if (opts.kind === "tv_show" && creators.length) out.creator = creators;
-  if (opts.kind === "book" && authors.length) out.author = authors;
-  if (opts.kind !== "book" && actors.length) out.actor = actors;
+  if ((opts.kind === "tv_show" || opts.kind === "anime") && creators.length) out.creator = creators;
+  if ((opts.kind === "book" || opts.kind === "manga") && authors.length) out.author = authors;
+  if (opts.kind !== "book" && opts.kind !== "manga" && actors.length) out.actor = actors;
   return out;
 }
 

@@ -11,11 +11,12 @@ const nextConfig: NextConfig = {
   // everywhere else.
   skipTrailingSlashRedirect: true,
   images: {
-    // Posters come pre-sized from TMDB and Open Library; no paid resizing.
+    // Posters come pre-sized from TMDB, Open Library and AniList; no paid resizing.
     unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "image.tmdb.org" },
       { protocol: "https", hostname: "covers.openlibrary.org" },
+      { protocol: "https", hostname: "s4.anilist.co" },
     ],
   },
   turbopack: {

@@ -2,7 +2,7 @@ import type { Database } from "@/lib/database.types";
 
 export type MediaKind = Database["public"]["Enums"]["media_kind"];
 export type CreditRole = Database["public"]["Enums"]["credit_role"];
-export type CatalogSource = "tmdb" | "openlibrary";
+export type CatalogSource = "tmdb" | "openlibrary" | "anilist";
 
 export interface CreditInput {
   name: string;
@@ -23,6 +23,8 @@ export interface LookupResult {
   coverUrl: string | null;
   /** A short hint, e.g. the director or author. */
   byline: string | null;
+  /** Other names for the work (original, romaji, native), used to spot the same work from another catalogue. */
+  altTitles?: string[];
 }
 
 export interface LookupDetail extends LookupResult {

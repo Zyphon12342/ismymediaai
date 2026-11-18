@@ -6,7 +6,7 @@ import { useState, type FormEvent } from "react";
 import { Turnstile } from "@/components/turnstile";
 import { Alert, Button, Field, inputClass } from "@/components/ui";
 import type { LookupDetail, LookupResult, MediaKind } from "@/lib/catalog/types";
-import { KIND_LABELS, titlePath } from "@/lib/services/labels";
+import { KIND_LABELS, SOURCE_NAMES, titlePath } from "@/lib/services/labels";
 import { ROLES_BY_KIND, roleLabel } from "@/lib/services/media";
 import { trackBrowser } from "@/components/analytics/analytics";
 
@@ -16,7 +16,19 @@ interface Genre {
   kinds: MediaKind[];
 }
 
-type Result = LookupResult & { existingSlug: string | null };
+type Result = LookupResult & {
+  existingSlug: string | null;
+  /** The same work, probably, already listed under another kind (an anime added as a TV show). */
+  possibleTwin: { slug: string; title: string; kind: MediaKind; year: number | null } | null;
+};
+
+const KINDS = ["movie", "tv_show", "book", "anime", "manga"] as const;
+
+function catalogueName(kind: MediaKind): string {
+  if (kind === "book") return SOURCE_NAMES.openlibrary;
+  if (kind === "anime" || kind === "manga") return SOURCE_NAMES.anilist;
+  return SOURCE_NAMES.tmdb;
+}
 
 async function api<T>(url: string, init?: RequestInit): Promise<{ ok: true; data: T; status: number } | { ok: false; message: string; status: number }> {
   const res = await fetch(url, init);
@@ -134,8 +146,8 @@ export function AddTitleForm({ genres, siteKey }: { genres: Genre[]; siteKey?: s
     <div className="space-y-6">
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium">What are you adding?</legend>
-        <div className="flex gap-2">
-          {(["movie", "tv_show", "book"] as const).map((k) => (
+        <div className="flex flex-wrap gap-2">
+          {KINDS.map((k) => (
             <label key={k} className={`cursor-pointer rounded-md border px-4 py-2 text-sm ${kind === k ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-300"} has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-zinc-900`}>
               <input type="radio" name="kind" value={k} checked={kind === k} onChange={() => changeKind(k)} className="sr-only" />
               {KIND_LABELS[k]}
@@ -148,7 +160,7 @@ export function AddTitleForm({ genres, siteKey }: { genres: Genre[]; siteKey?: s
         {(["catalogue", "manual"] as const).map((m) => (
           <button key={m} type="button" role="tab" aria-selected={mode === m} onClick={() => { setMode(m); setError(null); setPicked(detail?.genres.slice(0, 3) ?? []); }}
             className={`-mb-px border-b-2 px-1 pb-2 font-medium ${mode === m ? "border-zinc-900" : "border-transparent text-zinc-600"}`}>
-            {m === "catalogue" ? `Search ${kind === "book" ? "Open Library" : "TMDB"}` : "Add manually"}
+            {m === "catalogue" ? `Search ${catalogueName(kind)}` : "Add manually"}
           </button>
         ))}
       </div>
@@ -177,6 +189,14 @@ export function AddTitleForm({ genres, siteKey }: { genres: Genre[]; siteKey?: s
                     <div className="flex-1 text-sm">
                       <p className="font-medium">{r.title}{r.year ? ` (${r.year})` : ""}</p>
                       {r.byline ? <p className="text-zinc-600">{r.byline}</p> : null}
+                      {r.possibleTwin && !r.existingSlug ? (
+                        <p className="text-zinc-600">
+                          May already be here as a {KIND_LABELS[r.possibleTwin.kind].toLowerCase()}:{" "}
+                          <Link href={titlePath(r.possibleTwin.slug)} className="underline">
+                            {r.possibleTwin.title}{r.possibleTwin.year ? ` (${r.possibleTwin.year})` : ""}
+                          </Link>
+                        </p>
+                      ) : null}
                     </div>
                     {r.existingSlug ? (
                       <Link href={titlePath(r.existingSlug)} className="text-sm underline">Already here</Link>

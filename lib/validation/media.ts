@@ -1,7 +1,7 @@
 import { z } from "@/lib/validation/zod";
 import { mediaKind } from "./common";
 
-export const catalogSource = z.enum(["tmdb", "openlibrary"]);
+export const catalogSource = z.enum(["tmdb", "openlibrary", "anilist"]);
 export const creditRole = z.enum([
   "actor", "director", "creator", "writer", "showrunner", "composer",
   "author", "illustrator", "translator", "studio", "network", "publisher",
@@ -18,7 +18,7 @@ const searchText = z.string().trim().min(1, "Type a title.").max(100);
 export const LookupQuery = z.strictObject({ kind: mediaKind, q: searchText });
 export const LookupDetailQuery = z.strictObject({
   source: catalogSource,
-  id: z.string().regex(/^((movie|tv)\/\d{1,10}|OL\d{1,12}W)$/, "Invalid id."),
+  id: z.string().regex(/^((movie|tv|anime|manga)\/\d{1,10}|OL\d{1,12}W)$/, "Invalid id."),
 });
 
 const COMPANY_ROLES = new Set(["studio", "network", "publisher"]);

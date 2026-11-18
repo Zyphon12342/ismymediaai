@@ -48,6 +48,10 @@ export function sourceUrl(source: string, externalId: string | null): string | n
     return m ? `https://www.themoviedb.org/${m[1]}/${m[2]}` : null;
   }
   if (source === "openlibrary" && /^OL\d+W$/.test(externalId)) return `https://openlibrary.org/works/${externalId}`;
+  if (source === "anilist") {
+    const m = /^(anime|manga)\/(\d+)$/.exec(externalId);
+    return m ? `https://anilist.co/${m[1]}/${m[2]}` : null;
+  }
   return null;
 }
 
