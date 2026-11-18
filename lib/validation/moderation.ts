@@ -46,3 +46,11 @@ export const ModActionInput = z.strictObject({
   path: ["value"],
 });
 export type ModActionInput = z.infer<typeof ModActionInput>;
+
+/** Merge a duplicate title into the one that stays (given as a slug or title link). */
+export const MergeInput = z.strictObject({
+  fromId: uuid,
+  into: z.string().trim().min(1, "Enter the title to keep.").max(2000),
+  reason: note.nullable().optional(),
+});
+export type MergeInput = z.infer<typeof MergeInput>;

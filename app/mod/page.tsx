@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { MergeTitle } from "@/components/moderation/merge-title";
 import { ModActions } from "@/components/moderation/mod-actions";
 import { getModQueue } from "@/lib/data/moderation";
 import { getMyProfile } from "@/lib/data/profiles";
@@ -82,6 +83,9 @@ export default async function ModQueuePage() {
                 targetId={i.targetId}
                 commentsLocked={i.preview?.kind === "media" ? i.preview.commentsLocked : undefined}
               />
+              {i.preview?.kind === "media" && i.reports.some((r) => r.reason === "duplicate") ? (
+                <MergeTitle fromId={i.targetId} title={i.preview.title} />
+              ) : null}
             </li>
           ))}
         </ol>

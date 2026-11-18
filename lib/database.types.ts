@@ -291,6 +291,9 @@ isOneToOne: false
 "handle_available":
 { Args: { "p_handle": string }; Returns: boolean
                            },
+"merge_media":
+{ Args: { "p_from": string,"p_into": string,"p_reason"?: string }; Returns: number
+                           },
 "mod_profile_cards":
 { Args: { "p_ids": (string)[] }; Returns: {
               "banned_until": string,"display_name": string,"handle": string,"id": string,"role": Database["public"]['Enums']["user_role"],"trust_level": number

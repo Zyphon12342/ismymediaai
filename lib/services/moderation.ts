@@ -50,7 +50,33 @@ export function moderationErrorMessage(pgCode: string | undefined, pgMessage: st
   if (pgCode === "P0002") return "That is no longer available.";
   if (msg.includes("only admins")) return "Only admins can do that.";
   if (msg.includes("moderate yourself")) return "You can't moderate your own account.";
+  if (msg.includes("merged into itself")) return "Pick a different title to keep.";
+  if (msg.includes("already merged")) return "That title was already merged.";
+  if (msg.includes("must be published and not merged")) return "The title to keep must be published and not merged itself.";
+  if (msg.includes("same kind")) return "Both titles must be the same kind (film, show or book).";
   if (pgCode === "22023") return "That action doesn't fit this item.";
   if (pgCode === "42501") return "Moderators only.";
   return null;
+}
+
+const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+/**
+ * The slug from what a moderator pastes as the title to keep: a slug, a
+ * /titles/... path or a full link to a title page. Null when it is none.
+ */
+export function slugFromTitleRef(input: string): string | null {
+  const raw = input.trim();
+  if (!raw) return null;
+  let path = raw;
+  if (/^https?:\/\//i.test(raw)) {
+    try {
+      path = new URL(raw).pathname;
+    } catch {
+      return null;
+    }
+  }
+  const m = /^\/?titles\/([^/?#]+)\/?$/.exec(path);
+  const slug = (m?.[1] ?? path).toLowerCase();
+  return SLUG.test(slug) && slug.length <= 120 ? slug : null;
 }
