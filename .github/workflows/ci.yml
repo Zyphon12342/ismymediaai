@@ -50,6 +50,9 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci
+      # Same as the worker job: keep outgoing connections off 54321-54324.
+      - name: Keep outgoing connections off Supabase's ports
+        run: sudo sysctl -w net.ipv4.ip_local_port_range="55000 65000"
       - name: Start local Supabase and apply migrations
         # No mail catcher here: policy tests send no email, and its port has
         # collided with something already on the runner.
