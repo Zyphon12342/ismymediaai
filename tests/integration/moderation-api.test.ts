@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { APP_URL, admin, namedUser, publishedTitle } from "./env";
+import { APP_URL, admin, appSessionCookie, namedUser, publishedTitle } from "./env";
 
 const send = (cookie: string | null, path: string, method: string, body?: unknown) =>
   fetch(`${APP_URL}${path}`, {
@@ -8,10 +8,11 @@ const send = (cookie: string | null, path: string, method: string, body?: unknow
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
 
+/** A moderator whose app session passed 2-step login (aal2). */
 async function moderator(prefix: string) {
   const m = await namedUser(prefix);
   await admin().from("profiles").update({ role: "moderator" }).eq("id", m.id);
-  return m;
+  return { ...m, cookie: await appSessionCookie(m.email, m.password, { mfa: true }) };
 }
 
 type Queue = { items: { targetType: string; targetId: string; reports: { reason: string }[] }[]; pending: { id: string }[] };
@@ -59,5 +60,30 @@ describe("reports and the moderator queue", () => {
     expect((await send(mod.cookie, "/api/mod/actions", "POST", { action: "hide", targetType: "media", targetId: crypto.randomUUID() })).status).toBe(404);
     expect((await send(mod.cookie, "/api/mod/actions", "POST", { action: "ban", targetType: "media", targetId: crypto.randomUUID() })).status).toBe(422);
     expect((await send(null, "/api/reports", "POST", { targetType: "media", targetId: crypto.randomUUID(), reason: "spam" })).status).toBe(401);
+  });
+
+  it("refuses moderators until their session passes 2-step login", async () => {
+    const m = await namedUser("mnomfa");
+    await admin().from("profiles").update({ role: "moderator" }).eq("id", m.id);
+    const id = await publishedTitle(`it-mod-${crypto.randomUUID().slice(0, 8)}`);
+
+    const refused = await send(m.cookie, "/api/mod/queue", "GET");
+    expect(refused.status).toBe(403);
+    expect(((await refused.json()) as { error: { details?: { mfa?: boolean } } }).error.details).toEqual({ mfa: true });
+    expect((await send(m.cookie, "/api/mod/actions", "POST", { action: "lock_comments", targetType: "media", targetId: id, value: 1 })).status).toBe(403);
+
+    // The moderator page sends them to set up 2-step login first.
+    const page = await fetch(`${APP_URL}/mod`, { headers: { Cookie: m.cookie }, redirect: "manual" });
+    expect(page.headers.get("location") ?? "").toContain("/settings/security?next=%2Fmod");
+
+    const stepped = await appSessionCookie(m.email, m.password, { mfa: true });
+    expect((await send(stepped, "/api/mod/queue", "GET")).status).toBe(200);
+    expect((await send(stepped, "/api/mod/actions", "POST", { action: "lock_comments", targetType: "media", targetId: id })).status).toBe(422);
+    expect((await send(stepped, "/api/mod/actions", "POST", { action: "lock_comments", targetType: "media", targetId: id, value: 1 })).status).toBe(201);
+
+    // A new password-only session after that is asked for the code instead.
+    const again = await appSessionCookie(m.email, m.password);
+    const challenge = await fetch(`${APP_URL}/mod`, { headers: { Cookie: again }, redirect: "manual" });
+    expect(challenge.headers.get("location") ?? "").toContain("/auth/mfa?next=%2Fmod");
   });
 });

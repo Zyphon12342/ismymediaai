@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
+import { totp } from "./totp";
 
 // Defaults match the local Supabase CLI stack and `npm run preview`/`next start`.
 export const APP_URL = process.env.APP_URL ?? "http://localhost:3000";
@@ -48,7 +49,7 @@ export async function publishedTitle(slug: string) {
  * Sign in the way the browser does and return the Cookie header the app's
  * server client reads, so route handlers see a real session.
  */
-export async function appSessionCookie(email: string, password: string): Promise<string> {
+export async function appSessionCookie(email: string, password: string, opts: { mfa?: boolean } = {}): Promise<string> {
   const { createServerClient } = await import("@supabase/ssr");
   const jar = new Map<string, string>();
   const client = createServerClient<Database>(SUPABASE_URL, PUBLISHABLE_KEY, {
@@ -64,6 +65,13 @@ export async function appSessionCookie(email: string, password: string): Promise
   });
   const { error } = await client.auth.signInWithPassword({ email, password });
   if (error) throw error;
+  if (opts.mfa) {
+    // Turn on 2-step login with a TOTP app and pass it, so the session is aal2.
+    const { data: f, error: enrollError } = await client.auth.mfa.enroll({ factorType: "totp", friendlyName: "test" });
+    if (enrollError) throw enrollError;
+    const { error: verifyError } = await client.auth.mfa.challengeAndVerify({ factorId: f.id, code: totp(f.totp.secret) });
+    if (verifyError) throw verifyError;
+  }
   return [...jar].map(([n, v]) => `${n}=${v}`).join("; ");
 }
 

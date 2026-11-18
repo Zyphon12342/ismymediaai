@@ -151,6 +151,15 @@ update public.profiles set role = 'admin', trust_level = 2 where handle = 'your_
 
 After that, promote other moderators from SQL the same way with `role = 'moderator'`.
 
+**2-step login.** Moderator and admin powers only work from a session that passed 2-step login with an authenticator app (TOTP). The first time you open **Mod queue**, the site walks you through setting it up. After that, each sign-in asks for a 6-digit code.
+
+- Supabase turns TOTP on by default. To check, open the project → **Authentication → Multi-Factor** (under Configuration) → **TOTP (App Authenticator)** should be **Enabled**. If it isn't, set it to **Enabled** and click **Save**.
+- If a moderator loses their phone, an admin removes their authenticator so they can set it up again: Supabase → **Authentication → Users** → click the user → **Multi-Factor Authentication** section → delete the factor. Or run this in the **SQL Editor**:
+
+  ```sql
+  delete from auth.mfa_factors where user_id = (select id from public.profiles where handle = 'their_username');
+  ```
+
 ## 9. Fill staging with titles
 
 GitHub → **Actions → Seed staging catalogue → Run workflow** → keep the defaults (60 movies, 40 TV shows, 40 books) → **Run workflow**. It takes a few minutes. Titles already there are skipped, so you can run it again at any time. There is no production version on purpose: production fills up from members.

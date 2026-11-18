@@ -23,11 +23,17 @@ begin
 end;
 $$;
 
--- Act as a signed-in user for the following statements.
-create or replace function tests.authenticate_as(uid uuid) returns void
+-- Act as a signed-in user for the following statements. Moderators and
+-- admins get an aal2 (2-step login) session unless p_aal says otherwise;
+-- everyone else gets aal1.
+create or replace function tests.authenticate_as(uid uuid, p_aal text default null) returns void
 language plpgsql as $$
+declare
+  aal text := coalesce(p_aal, (
+    select case when p.role in ('moderator', 'admin') then 'aal2' else 'aal1' end
+    from public.profiles p where p.id = uid), 'aal1');
 begin
-  perform set_config('request.jwt.claims', json_build_object('sub', uid, 'role', 'authenticated')::text, true);
+  perform set_config('request.jwt.claims', json_build_object('sub', uid, 'role', 'authenticated', 'aal', aal)::text, true);
   perform set_config('role', 'authenticated', true);
 end;
 $$;

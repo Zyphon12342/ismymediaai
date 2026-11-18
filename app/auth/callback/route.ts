@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { NEXT_COOKIE } from "@/components/auth/next-cookie";
 import { browserOrigin } from "@/lib/http/origin";
 import { safeNextPath } from "@/lib/services/account";
+import { MFA_PATH, shouldChallenge } from "@/lib/services/mfa";
 import { createClient } from "@/lib/supabase/server";
 import { track } from "@/lib/analytics/server";
 
@@ -39,10 +40,17 @@ export async function GET(request: NextRequest) {
     failed = url.searchParams.get("error_code")!.slice(0, 60);
   }
 
+  // Accounts with 2-step login enter their code before going on.
+  let landing = next;
+  if (!failed) {
+    const { data: level } = await db.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (shouldChallenge(level)) landing = `${MFA_PATH}?next=${encodeURIComponent(next)}`;
+  }
+
   const origin = browserOrigin(request.headers, request.url);
   const target = failed
     ? new URL(`/auth/error?reason=${encodeURIComponent(failed)}`, origin)
-    : new URL(next, origin);
+    : new URL(landing, origin);
   const res = NextResponse.redirect(target, 303);
   res.cookies.delete(NEXT_COOKIE);
   res.headers.set("Cache-Control", "no-store");
