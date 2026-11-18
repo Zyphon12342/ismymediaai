@@ -84,6 +84,8 @@ jobs:
           NEXT_PUBLIC_BUILD_SHA: ${{ github.sha }}
           # Render the sign-in buttons so the tests and the accessibility scan cover them.
           NEXT_PUBLIC_AUTH_PROVIDERS: google,github
+          # A dummy key so the consent banner renders; PostHog rejects it.
+          NEXT_PUBLIC_POSTHOG_KEY: phc_ci_dummy
       - name: Start the Worker locally (workerd)
         run: |
           npx wrangler dev --port 8787 --ip 127.0.0.1 > wrangler.log 2>&1 &
