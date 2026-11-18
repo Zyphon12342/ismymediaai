@@ -71,6 +71,9 @@ export const fixtureFetch: FetchLike = async (input) => {
     const page = Number(url.searchParams.get("page") ?? "1");
     if (url.pathname === "/3/movie/popular") return json({ results: page === 1 ? movies : [] });
     if (url.pathname === "/3/tv/popular") return json({ results: page === 1 ? shows : [] });
+    if (url.pathname === "/3/movie/now_playing") return json({ results: page === 1 ? movies.slice(1) : [] });
+    if (url.pathname === "/3/trending/movie/week") return json({ results: movies });
+    if (url.pathname === "/3/trending/tv/week") return json({ results: shows });
     if ((m = /^\/3\/movie\/(\d+)$/.exec(url.pathname))) {
       const hit = movies.find((x) => x.id === Number(m![1]));
       return hit ? json(hit) : json({ status_message: "not found" }, 404);
@@ -86,7 +89,7 @@ export const fixtureFetch: FetchLike = async (input) => {
       const docs = books.filter((b) => (key ? b.key === key : match(q, b.title)));
       return json({ docs: docs.map((d) => ({ key: d.key, title: d.title, author_name: d.author_name, author_key: d.author_key, first_publish_year: d.first_publish_year, cover_i: d.cover_i })) });
     }
-    if (url.pathname === "/trending/yearly.json") return json({ works: books.map((b) => ({ key: b.key, title: b.title })) });
+    if (/^\/trending\/(daily|weekly|monthly|yearly)\.json$/.test(url.pathname)) return json({ works: books.map((b) => ({ key: b.key, title: b.title })) });
     if ((m = /^\/works\/(OL\d+W)\.json$/.exec(url.pathname))) {
       const hit = books.find((b) => b.key === `/works/${m![1]}`);
       return hit ? json({ key: hit.key, title: hit.title, ...hit.work }) : json({ error: "notfound" }, 404);

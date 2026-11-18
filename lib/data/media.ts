@@ -96,6 +96,28 @@ export async function browseMedia(db: DbClient, query: BrowseQuery): Promise<{ i
   };
 }
 
+export interface TrendingCard extends MediaCard {
+  reason: "new" | "trending";
+}
+
+/** The home page's "New and trending" row; recent releases when the list is empty. */
+export async function trendingMedia(db: DbClient, limit = 12): Promise<TrendingCard[]> {
+  const { data, error } = await db.rpc("trending_cards", { p_limit: limit });
+  if (error) throw error;
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    kind: r.kind,
+    slug: r.slug,
+    title: r.title,
+    year: r.release_year ?? null,
+    coverUrl: r.cover_url ?? null,
+    tally: { uses_ai: r.uses_ai, no_ai: r.no_ai, unsure: r.unsure },
+    total: r.counted_total,
+    genres: r.genres ?? [],
+    reason: r.reason === "trending" ? "trending" : "new",
+  }));
+}
+
 const DETAIL_COLUMNS = `
   id, kind, slug, title, original_title, release_year, synopsis, cover_url, source, external_id,
   status, comments_locked, created_at, updated_at, created_by, merged_into,

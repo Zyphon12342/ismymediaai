@@ -10,7 +10,7 @@ select is(
 
 select tables_are('public', array[
   'profiles', 'media', 'contributors', 'credits', 'genres', 'media_genres',
-  'votes', 'vote_tallies', 'comments', 'reports', 'mod_actions'
+  'votes', 'vote_tallies', 'comments', 'reports', 'mod_actions', 'trending_media'
 ], 'public schema has exactly the expected tables');
 
 select is((select count(*)::int from public.genres), 20, 'the curated genre list is seeded');

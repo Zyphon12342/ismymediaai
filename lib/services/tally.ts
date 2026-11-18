@@ -12,7 +12,8 @@ export interface TallySummary {
   lowSample: boolean;
 }
 
-export const LOW_SAMPLE_THRESHOLD = 10;
+/** Counted votes needed before a title shows percentages or a verdict. */
+export const LOW_SAMPLE_THRESHOLD = 5;
 
 const KEYS = ["uses_ai", "no_ai", "unsure"] as const;
 

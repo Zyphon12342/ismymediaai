@@ -133,9 +133,9 @@ export class OpenLibraryClient {
    * Works trending this year. Used to seed a new catalogue. The list is slow
    * to build on Open Library's side, so it gets a longer timeout.
    */
-  async trending(limit = 40, timeoutMs = 45000): Promise<string[]> {
+  async trending(limit = 40, timeoutMs = 45000, period: "daily" | "weekly" | "monthly" | "yearly" = "yearly"): Promise<string[]> {
     return parseOpenLibraryTrending(
-      await this.get("/trending/yearly.json", { limit: String(Math.min(limit, 100)) }, timeoutMs),
+      await this.get(`/trending/${period}.json`, { limit: String(Math.min(limit, 100)) }, timeoutMs),
     );
   }
 

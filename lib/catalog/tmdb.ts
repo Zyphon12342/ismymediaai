@@ -159,6 +159,17 @@ export class TmdbClient {
     return parseTmdbSearch(type, await this.get(`/${type}/popular`, { page: String(page) }));
   }
 
+  /** Movies in cinemas now. */
+  async nowPlaying(page = 1): Promise<LookupResult[]> {
+    return parseTmdbSearch("movie", await this.get("/movie/now_playing", { page: String(page) }));
+  }
+
+  /** What people are watching this week. */
+  async trending(kind: "movie" | "tv_show"): Promise<LookupResult[]> {
+    const type: TmdbKind = kind === "movie" ? "movie" : "tv";
+    return parseTmdbSearch(type, await this.get(`/trending/${type}/week`, {}));
+  }
+
   async detail(externalId: string): Promise<LookupDetail> {
     const id = parseTmdbId(externalId);
     if (!id) throw new CatalogError("Invalid TMDB id.", 400);

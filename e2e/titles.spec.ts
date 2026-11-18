@@ -25,7 +25,7 @@ test("add a film from the catalogue, then find it by browsing", async ({ page })
 
   await expect(page).toHaveURL(/\/titles\/the-sample-film-2031/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Is The Sample Film (2031) AI-generated?");
-  await expect(page.getByTestId("verdict")).toHaveText(/No community votes yet/);
+  await expect(page.getByTestId("verdict")).toHaveText(/No verdict yet\. Be the first to vote/);
   const credits = page.getByRole("region", { name: "Credits" });
   await expect(credits.getByText("Cleo Director")).toBeVisible();
   await expect(credits.getByText("Ada Placeholder (Projectionist)", { exact: false })).toBeVisible();
@@ -87,7 +87,7 @@ test("vote on a title, change it, and see it on your profile", async ({ page }) 
   const group = page.getByRole("group", { name: "Your vote" });
   await group.getByRole("button", { name: "Uses gen AI" }).click();
   await expect(group.getByRole("button", { name: "Uses gen AI" })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByTestId("verdict")).toHaveText(/Too few votes for a community verdict yet: 1 vote so far/);
+  await expect(page.getByTestId("verdict")).toHaveText(/No verdict yet: 1 vote so far/);
   await group.getByRole("button", { name: "No gen AI" }).click();
   await expect(group.getByRole("button", { name: "No gen AI" })).toHaveAttribute("aria-pressed", "true");
   await expect(group.getByRole("button", { name: "Uses gen AI" })).toHaveAttribute("aria-pressed", "false");

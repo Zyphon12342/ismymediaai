@@ -1,12 +1,22 @@
 name: Seed staging catalogue
 
-# Run by hand (Actions → Seed staging catalogue → Run workflow). Imports
-# popular movies and TV shows from TMDB and trending books from Open Library
-# into the staging database. Titles already there are skipped, so it is safe
-# to run again. There is deliberately no production version.
+# Imports popular movies and TV shows from TMDB and trending books from Open
+# Library into the staging database, then refreshes the home page's "New and
+# trending" list (TMDB now playing and this week's trending, Open Library's
+# weekly trending books). Titles already there are skipped, so it is safe to
+# run again. Runs daily for the trending list only, or by hand (Actions →
+# Seed staging catalogue → Run workflow) for everything. It uses free APIs and
+# free GitHub Actions minutes. There is deliberately no production version yet.
 on:
+  schedule:
+    - cron: "17 6 * * *"
   workflow_dispatch:
     inputs:
+      mode:
+        description: "full: popular lists and trending. trending: the trending list only."
+        type: choice
+        options: [full, trending]
+        default: full
       movies:
         description: Popular movies to add
         default: "60"
@@ -47,3 +57,4 @@ jobs:
           SEED_MOVIES: ${{ inputs.movies }}
           SEED_TV: ${{ inputs.tv }}
           SEED_BOOKS: ${{ inputs.books }}
+          SEED_MODE: ${{ github.event_name == 'schedule' && 'trending' || inputs.mode }}
