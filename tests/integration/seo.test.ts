@@ -33,6 +33,7 @@ describe("search engine files", () => {
     expect(res.status).toBe(308);
     expect(new URL(res.headers.get("location")!, APP_URL).pathname + new URL(res.headers.get("location")!, APP_URL).search).toBe("/sign-in?next=%2Fx");
     const ingest = await fetch(`${APP_URL}/ingest/i/v0/e/`, { redirect: "manual" });
-    expect(ingest.status).toBe(404); // no PostHog key locally, and no redirect
+    // Proxied (or 404 without a PostHog key), never redirected.
+    expect([301, 302, 307, 308]).not.toContain(ingest.status);
   });
 });
