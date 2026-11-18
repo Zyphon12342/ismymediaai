@@ -92,12 +92,15 @@ when CAPTCHA is on, so do the steps in this order:
    `staging.ismymediaai.com`, mode **Managed**, pre-clearance **No**. **Create**. Keep the page open.
 2. Supabase (staging) → **Authentication → Attack Protection → Enable CAPTCHA protection** on,
    provider **Turnstile by Cloudflare**, paste the widget's **Secret key**. **Save**.
-3. GitHub → **Settings → Environments → staging → Environment variables → Add variable**:
+3. GitHub → **Settings → Environments → staging → Environment secrets → Add environment secret**:
+   `TURNSTILE_SECRET_KEY` = the same **Secret key**. The app uses it to check the bot test when
+   someone adds a title or posts one of their first three comments.
+4. Same page → **Environment variables → Add variable**:
    `TURNSTILE_SITE_KEY` = the widget's **Site key** (public by design).
-4. Re-run the latest **Deploy to staging** workflow (Actions → Deploy to staging → Re-run all jobs).
+5. Re-run the latest **Deploy to staging** workflow (Actions → Deploy to staging → Re-run all jobs).
 
 Repeat with a second widget for `ismymediaai.com` and the `production` environment before launch.
-To turn it off, do the steps in reverse order (delete the variable and redeploy first).
+To turn it off, do the steps in reverse order (delete the variable and redeploy first, then the secret).
 
 ### Google and GitHub sign-in (optional)
 
