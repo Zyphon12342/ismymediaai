@@ -153,6 +153,12 @@ export class TmdbClient {
     return parseTmdbSearch(type, await this.get(`/search/${type}`, { query: q, include_adult: "false", page: "1" }));
   }
 
+  /** TMDB's current popular list, 20 per page. Used to seed a new catalogue. */
+  async popular(kind: "movie" | "tv_show", page = 1): Promise<LookupResult[]> {
+    const type: TmdbKind = kind === "movie" ? "movie" : "tv";
+    return parseTmdbSearch(type, await this.get(`/${type}/popular`, { page: String(page) }));
+  }
+
   async detail(externalId: string): Promise<LookupDetail> {
     const id = parseTmdbId(externalId);
     if (!id) throw new CatalogError("Invalid TMDB id.", 400);

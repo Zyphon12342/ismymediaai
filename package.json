@@ -20,7 +20,8 @@
     "db:reset": "supabase db reset",
     "db:test": "supabase test db",
     "db:types": "supabase gen types typescript --local --schema public > lib/database.types.ts",
-    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
+    "seed:catalogue": "tsx scripts/seed-catalogue.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -45,6 +46,7 @@
     "eslint-config-next": "16.4.6",
     "supabase": "^3.2.0",
     "tailwindcss": "4.3.3",
+    "tsx": "4.23.15",
     "typescript": "^5",
     "vitest": "^5.1.0",
     "wrangler": "^4.164.0"

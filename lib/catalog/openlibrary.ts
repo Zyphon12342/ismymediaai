@@ -97,6 +97,18 @@ export function parseOpenLibraryDetail(work: unknown, searchRow: unknown): Looku
   };
 }
 
+/** Work ids from Open Library's trending list, e.g. ["OL82563W", ...]. */
+export function parseOpenLibraryTrending(body: unknown): string[] {
+  if (!isRecord(body)) return [];
+  const ids: string[] = [];
+  for (const w of arr(body.works)) {
+    if (!isRecord(w) || typeof w.key !== "string") continue;
+    const id = w.key.replace(/^\/works\//, "");
+    if (isWorkId(id) && !ids.includes(id)) ids.push(id);
+  }
+  return ids;
+}
+
 export class OpenLibraryClient {
   constructor(private readonly fetchFn: FetchLike = fetch) {}
 
@@ -115,6 +127,11 @@ export class OpenLibraryClient {
 
   async search(q: string): Promise<LookupResult[]> {
     return parseOpenLibrarySearch(await this.get("/search.json", { q, fields: OpenLibraryClient.FIELDS, limit: "10" }));
+  }
+
+  /** Works trending this year. Used to seed a new catalogue. */
+  async trending(limit = 40): Promise<string[]> {
+    return parseOpenLibraryTrending(await this.get("/trending/yearly.json", { limit: String(Math.min(limit, 100)) }));
   }
 
   async detail(externalId: string): Promise<LookupDetail> {

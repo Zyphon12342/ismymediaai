@@ -151,6 +151,12 @@ update public.profiles set role = 'admin', trust_level = 2 where handle = 'your_
 
 After that, promote other moderators from SQL the same way with `role = 'moderator'`.
 
+## 9. Fill staging with titles
+
+GitHub → **Actions → Seed staging catalogue → Run workflow** → keep the defaults (60 movies, 40 TV shows, 40 books) → **Run workflow**. It takes a few minutes. Titles already there are skipped, so you can run it again at any time. There is no production version on purpose: production fills up from members.
+
+Locally: `SUPABASE_URL=http://127.0.0.1:54321 SUPABASE_SECRET_KEY=<local secret> TMDB_API_TOKEN=fixture npx tsx --import ./scripts/fixture-fetch.ts scripts/seed-catalogue.ts` seeds the fixture titles.
+
 ## How a change reaches production
 
 1. Open a PR. CI must be green.
