@@ -10,6 +10,12 @@ export const REPORT_REASON_LABELS: Record<ReportInput["reason"], string> = {
   other: "Something else",
 };
 
+/** Every reason the queue can show, including the automatic vote spike check. */
+export const QUEUE_REASON_LABELS: Record<ReportInput["reason"] | "vote_spike", string> = {
+  ...REPORT_REASON_LABELS,
+  vote_spike: "Vote spike",
+};
+
 /** Which reasons make sense for each kind of target. */
 export const REASONS_FOR: Record<ReportInput["targetType"], ReportInput["reason"][]> = {
   comment: ["spam", "harassment", "unsupported_claim", "other"],

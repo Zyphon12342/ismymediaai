@@ -6,7 +6,7 @@ import { getModQueue } from "@/lib/data/moderation";
 import { getMyProfile } from "@/lib/data/profiles";
 import { formatDate } from "@/lib/services/account";
 import { KIND_LABELS, profilePath, titlePath } from "@/lib/services/labels";
-import { REPORT_REASON_LABELS } from "@/lib/services/moderation";
+import { QUEUE_REASON_LABELS } from "@/lib/services/moderation";
 import { hasVerifiedFactor } from "@/lib/data/mfa";
 import { needsStepUp, stepUpPath } from "@/lib/services/mfa";
 import { createClient } from "@/lib/supabase/server";
@@ -72,8 +72,8 @@ export default async function ModQueuePage() {
               <ul className="space-y-1 text-xs text-zinc-700">
                 {i.reports.map((r) => (
                   <li key={r.id}>
-                    <span className="font-medium">{REPORT_REASON_LABELS[r.reason]}</span>
-                    {r.note ? `: ${r.note}` : ""} · {r.reporter ? `@${r.reporter}` : "former member"} · {formatDate(new Date(r.createdAt))}
+                    <span className="font-medium">{QUEUE_REASON_LABELS[r.reason]}</span>
+                    {r.note ? `: ${r.note}` : ""} · {r.reporter ? `@${r.reporter}` : r.reason === "vote_spike" ? "automatic check" : "former member"} · {formatDate(new Date(r.createdAt))}
                   </li>
                 ))}
               </ul>
