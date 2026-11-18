@@ -67,6 +67,8 @@ export function fromPostgresError(pgCode: string | undefined, message = "Request
       return new HttpError("unprocessable", message);
     case "42501":
       return new HttpError("forbidden", "You are not allowed to do that.");
+    case "RL429":
+      return new HttpError("rate_limited", "Too many requests. Try again later.");
     case "PGRST116":
       return new HttpError("not_found", "Not found.");
     default:

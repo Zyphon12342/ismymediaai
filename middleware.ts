@@ -1,7 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { publicEnv } from "@/lib/env";
+import { browserOrigin } from "@/lib/http/origin";
 import { REQUEST_ID_HEADER, requestIdFrom } from "@/lib/http/request-id";
 import { securityHeaders } from "@/lib/http/security-headers";
+import { trimEnd } from "@/lib/services/text";
 import { refreshSession } from "@/lib/supabase/middleware";
 
 // Layer 1 of the request checks (see docs/ARCHITECTURE.md). This stays on the
@@ -19,6 +21,18 @@ export async function middleware(request: NextRequest) {
       const target = new URL(url.pathname + url.search, site);
       return NextResponse.redirect(target, 308);
     }
+  }
+
+  // Analytics proxy: no session work, no trailing-slash rewrite.
+  if (url.pathname.startsWith("/ingest/")) return NextResponse.next();
+
+  // One URL per page: /path/ goes to /path (next.config skips Next's own redirect).
+  if (url.pathname.length > 1 && url.pathname.endsWith("/")) {
+    const location = (trimEnd(url.pathname, "/") || "/") + url.search;
+    return new NextResponse(null, {
+      status: 308,
+      headers: { Location: new URL(location, browserOrigin(request.headers, request.url)).toString() },
+    });
   }
 
   const requestId = requestIdFrom(request.headers);

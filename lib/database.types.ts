@@ -255,13 +255,58 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "my_profile":
-{ Args: Record<PropertyKey, never>; Returns: {
-              "avatar_path": string,"banned_until": string,"created_at": string,"display_name": string,"email_verified": boolean,"handle": string,"id": string,"role": Database["public"]['Enums']["user_role"],"show_votes": boolean,"trust_level": number
+            "browse_media":
+{ Args: { "p_genre"?: string,"p_kind"?: Database["public"]['Enums']["media_kind"],"p_limit"?: number,"p_offset"?: number,"p_q"?: string,"p_sort"?: string }; Returns: {
+              "counted_total": number,"cover_url": string,"created_at": string,"genres": (string)[],"id": string,"kind": Database["public"]['Enums']["media_kind"],"no_ai": number,"release_year": number,"slug": string,"title": string,"unsure": number,"uses_ai": number
             }[]
+                           },
+"cast_vote":
+{ Args: { "p_media": string,"p_value": Database["public"]['Enums']["vote_value"] }; Returns: Database["public"]['Enums']["vote_value"]
+                           },
+"create_media":
+{ Args: { "p": Json }; Returns: {
+              "existing": boolean,"id": string,"slug": string,"status": Database["public"]['Enums']["content_status"]
+            }[]
+                           },
+"handle_available":
+{ Args: { "p_handle": string }; Returns: boolean
+                           },
+"mod_profile_cards":
+{ Args: { "p_ids": (string)[] }; Returns: {
+              "banned_until": string,"display_name": string,"handle": string,"id": string,"role": Database["public"]['Enums']["user_role"],"trust_level": number
+            }[]
+                           },
+"moderate":
+{ Args: { "p_action": Database["public"]['Enums']["mod_action_type"],"p_reason"?: string,"p_target": string,"p_target_type": Database["public"]['Enums']["report_target"],"p_value"?: number }; Returns: number
+                           },
+"my_comment_count":
+{ Args: Record<PropertyKey, never>; Returns: number
+                           },
+"my_profile":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "avatar_path": string,"banned_until": string,"created_at": string,"display_name": string,"email_verified": boolean,"handle": string,"handle_changed_at": string,"id": string,"role": Database["public"]['Enums']["user_role"],"show_votes": boolean,"trust_level": number
+            }[]
+                           },
+"profile_stats":
+{ Args: { "p_user": string }; Returns: {
+              "comment_count": number,"titles_added": number,"vote_count": number
+            }[]
+                           },
+"rate_limit_check":
+{ Args: { "p_bucket": string }; Returns: undefined
                            },
 "refresh_trust_levels":
 { Args: Record<PropertyKey, never>; Returns: number
+                           },
+"related_media":
+{ Args: { "p_limit"?: number,"p_media": string }; Returns: {
+              "cover_url": string,"id": string,"kind": Database["public"]['Enums']["media_kind"],"release_year": number,"shared_genres": number,"shared_people": (string)[],"slug": string,"title": string
+            }[]
+                           },
+"sitemap_media":
+{ Args: { "p_limit"?: number,"p_offset"?: number }; Returns: {
+              "slug": string,"updated_at": string
+            }[]
                            }
           }
           Enums: {

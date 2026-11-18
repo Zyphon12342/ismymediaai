@@ -8,7 +8,8 @@ export default defineConfig({
   test: {
     coverage: {
       provider: "v8",
-      include: ["lib/services/**/*.ts", "lib/validation/**/*.ts"],
+      include: ["lib/services/**/*.ts", "lib/validation/**/*.ts", "lib/catalog/**/*.ts"],
+      exclude: ["lib/catalog/index.ts"],
       thresholds: { lines: 80, functions: 80, branches: 80, statements: 80 },
     },
     projects: [

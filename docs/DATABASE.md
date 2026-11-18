@@ -27,9 +27,20 @@ Security and triggers. `lib/database.types.ts` is generated from it.
 | Kind-specific credit roles (no director on a book) | `private.check_credit` |
 | 1 to 3 genres per title that fit its kind (max enforced here, min by the service) | `private.check_media_genre` |
 | One level of replies, 15-minute edits, soft delete clears text | comment triggers |
+| 10 new comments an hour and 20 edits or deletes an hour per user; no edits on a locked title | `comments_write_checks` trigger |
+| Blocked words (whole word, any case) and blocked evidence-link domains, both admin-managed lists | `private.blocked_terms`, `private.blocked_domains` |
 | One open report per reporter per target | partial unique index |
+| 20 reports a day; the target must exist, be visible, and not be your own comment or profile | `reports_check_insert` trigger |
+| Three open reports from distinct trust 1+ users (or one from trust 2) hide a comment until review, logged with no actor | `reports_auto_hide` trigger |
+| Every moderator action (hide, restore, remove, lock comments, ban, trust, role) runs in `public.moderate()`, which closes the target's open reports and writes `mod_actions`; only admins act on moderators or change roles | `public.moderate()` |
+| Deleting a title with votes does not recreate its tally | `private.recount_tally` |
 | `mod_actions` is append-only, even for admins and the owner | `private.forbid_change` triggers |
-| Handle changes at most once per 30 days | `private.guard_profile_update` |
+| Handle changes at most once per 30 days; no reserved or placeholder-shaped handles | `private.guard_profile_update` |
+| Username picked at sign-up is kept if free, else a `user_…` placeholder | `private.handle_new_user` |
+| Avatars only in the user's own folder, images up to 2 MB, at most 3 files | `avatars` bucket and storage policies |
+| New titles are created in one transaction with 1 to 3 genres and kind-fitting credits; catalogue ids are unique, so re-adding returns the existing title | `public.create_media()` |
+| Five new titles a day per user; 30 catalogue lookups a minute | `media_rate_limit` trigger, `public.rate_limit_check('lookup')` |
+| Rate limits (profile edits: 10 an hour); errors use SQLSTATE `RL429`, mapped to HTTP 429 | `private.rate_limit`, called from triggers |
 | Nightly trust promotion (verified, 72 h old) | `pg_cron` job `refresh-trust-levels`, 03:15 UTC |
 
 Public profile columns are `id, handle, display_name, avatar_path, role, show_votes, created_at`.

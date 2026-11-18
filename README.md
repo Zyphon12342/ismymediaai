@@ -32,6 +32,9 @@ npm run dev           # http://localhost:3000
 ```
 app/                 pages and app/api route handlers (thin)
 lib/services/        business logic, pure functions (unit tested)
+lib/catalog/         TMDB and Open Library clients (fixtures for local previews and CI)
+lib/data/            typed queries used by pages and routes (user token, RLS applies)
+components/          React components
 lib/validation/      Zod schemas shared by forms and the API
 lib/http/            withHandler route wrapper, errors, origin check, security headers
 lib/supabase/        server, browser and middleware clients (user token, RLS applies)
