@@ -1,11 +1,22 @@
+import { cookies, headers } from "next/headers";
 import Script from "next/script";
+import { CONSENT_COOKIE, effectiveConsent } from "@/lib/analytics/consent";
 import { publicEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import { Analytics } from "./analytics";
+import { ConsentBanner } from "./consent-banner";
 
-/** PostHog and Cloudflare Web Analytics, each only when its key is set. */
+/** The visitor's consent state; "granted" when PostHog is off, as nothing is stored. */
+export async function consentState() {
+  if (!publicEnv().NEXT_PUBLIC_POSTHOG_KEY) return null;
+  const [jar, h] = await Promise.all([cookies(), headers()]);
+  return effectiveConsent(jar.get(CONSENT_COOKIE)?.value, h.get("cf-ipcountry"));
+}
+
+/** PostHog (behind the consent banner) and Cloudflare Web Analytics, each only when its key is set. */
 export async function AnalyticsHooks() {
   const env = publicEnv();
+  const consent = await consentState();
   let userId: string | null = null;
   if (env.NEXT_PUBLIC_POSTHOG_KEY) {
     const { data } = await (await createClient()).auth.getClaims();
@@ -13,8 +24,11 @@ export async function AnalyticsHooks() {
   }
   return (
     <>
-      {env.NEXT_PUBLIC_POSTHOG_KEY ? (
-        <Analytics posthogKey={env.NEXT_PUBLIC_POSTHOG_KEY} posthogHost={env.NEXT_PUBLIC_POSTHOG_HOST} userId={userId} />
+      {env.NEXT_PUBLIC_POSTHOG_KEY && consent ? (
+        <>
+          <Analytics posthogKey={env.NEXT_PUBLIC_POSTHOG_KEY} posthogHost={env.NEXT_PUBLIC_POSTHOG_HOST} userId={userId} consent={consent} />
+          <ConsentBanner initial={consent} />
+        </>
       ) : null}
       {env.NEXT_PUBLIC_CF_BEACON_TOKEN ? (
         <Script
