@@ -23,7 +23,7 @@ describe("search engine files", () => {
     await publishedTitle(slug);
     const html = await (await fetch(`${APP_URL}/titles/${slug}`)).text();
     expect(html).toContain("AI-generated?</h1>");
-    expect(html).toContain("No community votes yet.");
+    expect(html).toContain("No verdict yet. Be the first to vote");
     expect(html).toContain('"@type":"FAQPage"');
     expect(html).toContain('"@type":"Movie"');
   });

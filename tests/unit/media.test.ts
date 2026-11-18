@@ -9,7 +9,7 @@ import {
   roleAllowed,
   roleLabel,
 } from "@/lib/services/media";
-import { sourceUrl, verdictKind, verdictSentence } from "@/lib/services/verdict";
+import { cardVoteLine, sourceUrl, verdictKind, verdictSentence } from "@/lib/services/verdict";
 import { BrowseQuery, CreateMediaInput, LookupDetailQuery, LookupQuery, isCompanyRole } from "@/lib/validation/media";
 
 const detail: LookupDetail = {
@@ -101,10 +101,17 @@ describe("verdicts", () => {
   const at = new Date("2026-11-18T00:00:00Z");
   it("says nothing firm on thin data", () => {
     expect(verdictKind({ uses_ai: 0, no_ai: 0, unsure: 0 })).toBe("none");
-    expect(verdictSentence({ uses_ai: 0, no_ai: 0, unsure: 0 })).toMatch(/No community votes/);
+    expect(verdictSentence({ uses_ai: 0, no_ai: 0, unsure: 0 })).toMatch(/No verdict yet\. Be the first to vote/);
     expect(verdictSentence({ uses_ai: 3, no_ai: 0, unsure: 0 }, { updatedAt: at })).toBe(
-      "Too few votes for a community verdict yet: 3 votes so far, as of November 18, 2026.",
+      "No verdict yet: 3 votes so far, as of November 18, 2026. A community verdict shows after 5 votes.",
     );
+  });
+  it("shows a verdict from 5 votes, and card lines invite the first vote", () => {
+    expect(verdictKind({ uses_ai: 4, no_ai: 0, unsure: 0 })).toBe("too_few");
+    expect(verdictKind({ uses_ai: 5, no_ai: 0, unsure: 0 })).toBe("uses_ai");
+    expect(cardVoteLine({ uses_ai: 0, no_ai: 0, unsure: 0 })).toBe("No verdict yet. Be the first to vote");
+    expect(cardVoteLine({ uses_ai: 1, no_ai: 0, unsure: 0 })).toBe("1 vote · verdict at 5");
+    expect(cardVoteLine({ uses_ai: 3, no_ai: 2, unsure: 1 })).toBe("6 votes");
   });
   it("frames majorities as community votes", () => {
     expect(verdictSentence({ uses_ai: 8, no_ai: 2, unsure: 0 })).toBe("Community votes say it likely used generative AI: 80% of 10 votes.");

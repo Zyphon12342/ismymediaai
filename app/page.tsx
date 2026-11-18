@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { MediaCard } from "@/components/media/media-card";
-import { browseMedia, listGenres } from "@/lib/data/media";
+import { browseMedia, listGenres, trendingMedia } from "@/lib/data/media";
 import { pickParams } from "@/lib/http/query";
 import { KIND_PLURALS } from "@/lib/services/labels";
 import { createClient } from "@/lib/supabase/server";
@@ -34,7 +34,13 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   }
   const query = BrowseQuery.parse(pickParams(params, ["q", "kind", "genre", "sort", "cursor"]));
   const db = await createClient();
-  const [page, genres] = await Promise.all([browseMedia(db, query), listGenres(db, query.kind)]);
+  // "New and trending" only on the plain home page, not on searches or later pages.
+  const plain = !query.q && !query.kind && !query.genre && !query.sort && !query.cursor;
+  const [page, genres, trending] = await Promise.all([
+    browseMedia(db, query),
+    listGenres(db, query.kind),
+    plain ? trendingMedia(db, 12) : Promise.resolve([]),
+  ]);
   const genre = genres.some((g) => g.slug === query.genre) ? query.genre : undefined;
 
   const link = (over: Record<string, string | undefined>) => {
@@ -54,6 +60,26 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           Community votes, backed by cited evidence, on whether a movie, TV show or book used generative AI.
         </p>
       </section>
+
+      {trending.length ? (
+        <section aria-labelledby="trending-heading" className="space-y-4">
+          <div>
+            <h2 id="trending-heading" className="text-xl font-semibold tracking-tight">
+              New and trending
+            </h2>
+            <p className="text-sm text-zinc-600">In cinemas, on TV and on reading lists right now. Most have no verdict yet, so your vote counts.</p>
+          </div>
+          <ul className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+            {trending.map((m) => (
+              <MediaCard key={m.id} media={m} badge={m.reason === "new" ? "New" : "Trending"} />
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {trending.length ? (
+        <h2 className="text-xl font-semibold tracking-tight">All titles</h2>
+      ) : null}
 
       <form action="/" method="get" role="search" className="space-y-4">
         {query.kind ? <input type="hidden" name="kind" value={query.kind} /> : null}

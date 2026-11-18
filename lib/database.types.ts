@@ -203,6 +203,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"trending_media": {
+                  Row: {
+                    "media_id": string,"rank": number,"reason": string,"refreshed_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "media_id": string,"rank": number,"reason": string,"refreshed_at"?: string
+                  }
+                  Update: {
+                    "media_id"?: string,"rank"?: number,"reason"?: string,"refreshed_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "trending_media_media_id_fkey"
+      columns: ["media_id"]
+isOneToOne: true
+      referencedRelation: "media"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"vote_tallies": {
                   Row: {
                     "counted_total": number | null,"media_id": string,"no_ai": number,"under_review": boolean,"unsure": number,"updated_at": string,"uses_ai": number
@@ -306,6 +326,11 @@ isOneToOne: false
 "sitemap_media":
 { Args: { "p_limit"?: number,"p_offset"?: number }; Returns: {
               "slug": string,"updated_at": string
+            }[]
+                           },
+"trending_cards":
+{ Args: { "p_kind"?: Database["public"]['Enums']["media_kind"],"p_limit"?: number }; Returns: {
+              "counted_total": number,"cover_url": string,"genres": (string)[],"id": string,"kind": Database["public"]['Enums']["media_kind"],"no_ai": number,"reason": string,"release_year": number,"slug": string,"title": string,"unsure": number,"uses_ai": number
             }[]
                            }
           }

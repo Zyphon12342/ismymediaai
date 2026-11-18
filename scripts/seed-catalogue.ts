@@ -1,9 +1,14 @@
 /**
  * Seed the catalogue with popular movies and TV shows from TMDB and trending
- * books from Open Library, so a fresh environment is not empty.
+ * books from Open Library, so a fresh environment is not empty, then refresh
+ * the "New and trending" list on the home page from TMDB now-playing and
+ * this week's trending titles and books.
  *
  *   SUPABASE_URL=... SUPABASE_SECRET_KEY=... TMDB_API_TOKEN=... \
  *   SEED_MOVIES=60 SEED_TV=40 SEED_BOOKS=40 npx tsx scripts/seed-catalogue.ts
+ *
+ * SEED_MODE=trending skips the popular lists and only refreshes trending
+ * (the daily scheduled run).
  *
  * Titles go through public.create_media(), the same path as "Add a title",
  * so already-added titles are skipped. Run by .github/workflows/seed-staging.yml.
@@ -14,7 +19,7 @@ import { TmdbClient } from "@/lib/catalog/tmdb";
 import type { LookupDetail } from "@/lib/catalog/types";
 import type { Database } from "@/lib/database.types";
 import { payloadFromCatalogue } from "@/lib/services/media";
-import { parseCount, seedGenres, worthSeeding } from "@/lib/services/seed";
+import { MIN_TRENDING, interleaveTrending, parseCount, seedGenres, worthSeeding, type TrendingReason } from "@/lib/services/seed";
 
 function need(name: string): string {
   const v = process.env[name];
@@ -30,25 +35,27 @@ async function main() {
   });
   const tmdb = new TmdbClient(need("TMDB_API_TOKEN"));
   const ol = new OpenLibraryClient();
+  const trendingOnly = process.env.SEED_MODE === "trending";
   const wanted = {
-    movie: parseCount(process.env.SEED_MOVIES, 60),
-    tv_show: parseCount(process.env.SEED_TV, 40),
-    book: parseCount(process.env.SEED_BOOKS, 40),
+    movie: trendingOnly ? 0 : parseCount(process.env.SEED_MOVIES, 60),
+    tv_show: trendingOnly ? 0 : parseCount(process.env.SEED_TV, 40),
+    book: trendingOnly ? 0 : parseCount(process.env.SEED_BOOKS, 40),
   };
   const stats = { added: 0, existing: 0, skipped: 0, failed: 0 };
 
-  async function add(load: () => Promise<LookupDetail>, label: string): Promise<boolean> {
+  /** Add a title (or find it) and return its id, or null when it was skipped. */
+  async function add(load: () => Promise<LookupDetail>, label: string): Promise<string | null> {
     let detail: LookupDetail;
     try {
       detail = await load();
     } catch (err) {
       stats.failed++;
       console.warn(`lookup failed: ${label}: ${String(err)}`);
-      return false;
+      return null;
     }
     if (!worthSeeding(detail)) {
       stats.skipped++;
-      return false;
+      return null;
     }
     const { data, error } = await db
       .rpc("create_media", { p: payloadFromCatalogue(detail, seedGenres(detail)) as never })
@@ -56,11 +63,14 @@ async function main() {
     if (error) {
       stats.failed++;
       console.warn(`create failed: ${detail.title}: ${error.message}`);
-      return false;
+      return null;
     }
     if (data.existing) {
       stats.existing++;
-      return true;
+      // create_media() only returns the slug of an existing title.
+      const { data: row, error: findError } = await db.from("media").select("id").eq("slug", data.slug).maybeSingle();
+      if (findError) throw findError;
+      return row?.id ?? null;
     }
     // Catalogue entries publish at once, as they do for members. With the
     // secret key there is no caller, so the insert trigger leaves them pending.
@@ -68,7 +78,7 @@ async function main() {
     if (pub) throw pub;
     stats.added++;
     console.log(`added ${detail.kind} ${data.slug}`);
-    return true;
+    return data.id;
   }
 
   // One source failing (Open Library's trending list is slow) must not stop
@@ -105,6 +115,43 @@ async function main() {
       if (done >= wanted.book) break;
       if (await add(() => ol.detail(id), id)) done++;
       await sleep(400); // Open Library asks clients to stay gentle
+    }
+  }
+
+  // "New and trending": what's in cinemas now, this week's trending movies,
+  // TV and books. Each list is added to the catalogue, then ranked.
+  const perList = parseCount(process.env.SEED_TRENDING, 10, 20);
+  const lists: { reason: TrendingReason; ids: string[] }[] = [];
+  async function collect(reason: TrendingReason, name: string, results: { externalId: string }[], load: (id: string) => Promise<LookupDetail>, pause: number) {
+    const ids: string[] = [];
+    for (const r of results.slice(0, perList)) {
+      const id = await add(() => load(r.externalId), `${name} ${r.externalId}`);
+      if (id) ids.push(id);
+      await sleep(pause);
+    }
+    lists.push({ reason, ids });
+  }
+  if (perList > 0) {
+    const detail = (id: string) => tmdb.detail(id);
+    await collect("new", "now playing", await list("TMDB now playing", () => tmdb.nowPlaying()), detail, 100);
+    await collect("trending", "trending movie", await list("TMDB trending movies", () => tmdb.trending("movie")), detail, 100);
+    await collect("trending", "trending TV", await list("TMDB trending TV", () => tmdb.trending("tv_show")), detail, 100);
+    const books = (await list("Open Library weekly trending", () => ol.trending(perList * 2, 45000, "weekly"))).map((externalId) => ({ externalId }));
+    await collect("trending", "trending book", books, (id) => ol.detail(id), 400);
+
+    const ranked = interleaveTrending(lists);
+    if (ranked.length >= parseCount(process.env.SEED_MIN_TRENDING, MIN_TRENDING)) {
+      const refreshedAt = new Date().toISOString();
+      const { error: delError } = await db.from("trending_media").delete().not("media_id", "is", null);
+      if (delError) throw delError;
+      const { error: insError } = await db
+        .from("trending_media")
+        .insert(ranked.map((e) => ({ media_id: e.mediaId, rank: e.rank, reason: e.reason, refreshed_at: refreshedAt })));
+      if (insError) throw insError;
+      console.log(`trending list refreshed: ${ranked.length} titles`);
+    } else {
+      console.warn(`only ${ranked.length} trending titles found, keeping the previous list`);
+      stats.failed++;
     }
   }
 

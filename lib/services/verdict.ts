@@ -1,5 +1,5 @@
 import { formatDate } from "./account";
-import { summarizeTally, type Tally } from "./tally";
+import { LOW_SAMPLE_THRESHOLD, summarizeTally, type Tally } from "./tally";
 
 export const MAJORITY = 60;
 
@@ -23,10 +23,10 @@ export function verdictSentence(t: Tally, opts: { updatedAt?: Date | null; under
   let out: string;
   switch (verdictKind(t)) {
     case "none":
-      out = "No community votes yet. Vote and share evidence to start the verdict.";
+      out = "No verdict yet. Be the first to vote, and add evidence if you have it.";
       break;
     case "too_few":
-      out = `Too few votes for a community verdict yet: ${votes} so far${asOf}.`;
+      out = `No verdict yet: ${votes} so far${asOf}. A community verdict shows after ${LOW_SAMPLE_THRESHOLD} votes.`;
       break;
     case "uses_ai":
       out = `Community votes say it likely used generative AI: ${s.percent.uses_ai}% of ${votes}${asOf}.`;
@@ -49,4 +49,12 @@ export function sourceUrl(source: string, externalId: string | null): string | n
   }
   if (source === "openlibrary" && /^OL\d+W$/.test(externalId)) return `https://openlibrary.org/works/${externalId}`;
   return null;
+}
+
+/** The vote line under a title card. */
+export function cardVoteLine(t: Tally): string {
+  const s = summarizeTally(t);
+  if (s.total === 0) return "No verdict yet. Be the first to vote";
+  const votes = `${s.total} vote${s.total === 1 ? "" : "s"}`;
+  return s.lowSample ? `${votes} · verdict at ${LOW_SAMPLE_THRESHOLD}` : votes;
 }

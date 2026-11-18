@@ -52,3 +52,23 @@ describe("catalogue lists for seeding", () => {
     expect(url).toContain("/trending/yearly.json?limit=100");
   });
 });
+
+describe("trending list", () => {
+  it("takes one from each list in turn, skipping repeats", async () => {
+    const { interleaveTrending } = await import("@/lib/services/seed");
+    const out = interleaveTrending([
+      { reason: "new", ids: ["a", "b", "c"] },
+      { reason: "trending", ids: ["b", "d"] },
+      { reason: "trending", ids: ["e"] },
+    ]);
+    expect(out.map((e) => e.mediaId)).toEqual(["a", "b", "e", "d", "c"]);
+    expect(out.map((e) => e.rank)).toEqual([1, 2, 3, 4, 5]);
+    expect(out.find((e) => e.mediaId === "b")?.reason).toBe("trending");
+    expect(out[0]?.reason).toBe("new");
+  });
+  it("stops at the cap and copes with empty lists", async () => {
+    const { interleaveTrending } = await import("@/lib/services/seed");
+    expect(interleaveTrending([{ reason: "new", ids: ["a", "b", "c"] }], 2).map((e) => e.mediaId)).toEqual(["a", "b"]);
+    expect(interleaveTrending([])).toEqual([]);
+  });
+});
