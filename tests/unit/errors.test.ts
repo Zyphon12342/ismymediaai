@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { HttpError, fromPostgresError, toErrorBody } from "@/lib/http/errors";
-import { isSameOrigin } from "@/lib/http/origin";
+import { browserOrigin, isSameOrigin } from "@/lib/http/origin";
 import { requestIdFrom } from "@/lib/http/request-id";
 
 describe("error mapping", () => {
@@ -22,6 +22,7 @@ describe("error mapping", () => {
     expect(fromPostgresError("42501").status).toBe(403);
     expect(fromPostgresError("23514").status).toBe(422);
     expect(fromPostgresError("PGRST116").status).toBe(404);
+    expect(fromPostgresError("RL429").status).toBe(429);
     expect(fromPostgresError("XX000").status).toBe(500);
   });
 });
@@ -39,6 +40,21 @@ describe("origin check", () => {
     expect(isSameOrigin("POST", h("https://evil.example"), site, `${site}/api/x`)).toBe(false);
     expect(isSameOrigin("PUT", h(), site, `${site}/api/x`)).toBe(false);
     expect(isSameOrigin("DELETE", h("null"), site, `${site}/api/x`)).toBe(false);
+  });
+
+  it("accepts an Origin that matches the Host header (local workerd)", () => {
+    const headers = new Headers({ origin: "http://127.0.0.1:8787", host: "127.0.0.1:8787" });
+    expect(isSameOrigin("PATCH", headers, "http://localhost:3000", "http://localhost:8787/api/me")).toBe(true);
+    const evil = new Headers({ origin: "http://evil.example", host: "127.0.0.1:8787" });
+    expect(isSameOrigin("PATCH", evil, "http://localhost:3000", "http://localhost:8787/api/me")).toBe(false);
+  });
+});
+
+describe("browserOrigin", () => {
+  it("prefers a sane Host header", () => {
+    expect(browserOrigin(new Headers({ host: "127.0.0.1:8787" }), "http://localhost:8787/x")).toBe("http://127.0.0.1:8787");
+    expect(browserOrigin(new Headers({ host: "evil/path" }), "https://ismymediaai.com/x")).toBe("https://ismymediaai.com");
+    expect(browserOrigin(new Headers(), "https://ismymediaai.com/x")).toBe("https://ismymediaai.com");
   });
 });
 

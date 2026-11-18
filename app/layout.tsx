@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import Link from "next/link";
+import { SiteHeader } from "@/components/site-header";
 import { publicEnv } from "@/lib/env";
 import "./globals.css";
 
@@ -16,13 +16,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col bg-white text-zinc-900">
-        <header className="border-b border-zinc-200">
-          <nav className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3" aria-label="Main">
-            <Link href="/" className="font-semibold tracking-tight">
-              isMyMediaAI
-            </Link>
-          </nav>
-        </header>
+        <SiteHeader />
         <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
         <footer className="border-t border-zinc-200 text-sm text-zinc-600">
           <div className="mx-auto max-w-5xl px-4 py-6">

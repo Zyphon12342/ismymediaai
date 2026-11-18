@@ -53,18 +53,68 @@ and site URLs are already in the workflows.
   `Worker build, integration and end-to-end`, `Secret scan (gitleaks)`, `Static analysis (Semgrep)`, `analyze (javascript-typescript)`, `analyze (actions)`.
   (They appear in the picker after the first CI run.)
 
-## 5. Supabase project settings (both projects)
+## 5. Supabase Auth settings (do this in both projects)
 
-`supabase/config.toml` configures the local stack only. In each hosted project:
+`supabase/config.toml` configures the local stack only. Open each hosted project at
+supabase.com/dashboard (staging `raytxskehcrnbvyeebbf`, production `ifcwdqxukmauazzrmknf`) and:
 
-- **Authentication → URL Configuration**: Site URL `https://staging.ismymediaai.com` (staging) or
-  `https://ismymediaai.com` (production). Redirect URLs: `<site>/auth/callback` only, no wildcards.
-- **Authentication → Sign In / Providers → Email**: *Confirm email* on; minimum password length 10.
-- **Authentication → Attack Protection**: turn on *Prevent use of leaked passwords* (needs the Pro plan;
-  turn it on for production when you upgrade).
-- **Database → Extensions**: nothing to do; migrations enable `pg_cron` themselves.
+1. **Authentication → URL Configuration**
+   - Site URL: `https://staging.ismymediaai.com` (staging) or `https://ismymediaai.com` (production).
+   - Redirect URLs → **Add URL**: `https://staging.ismymediaai.com/auth/callback` (staging) or
+     `https://ismymediaai.com/auth/callback` (production). Exactly that one, no wildcards. **Save**.
+2. **Authentication → Sign In / Providers → Email**: *Confirm email* on, *Secure email change* on,
+   minimum password length **10**. **Save**.
+3. **Authentication → Emails → Templates**. For each of the three below, replace the subject and the
+   whole message body with the file from `supabase/templates/`, then **Save**:
 
-Google and GitHub sign-in, Resend email and Turnstile are set up in the auth milestone.
+   | Template | Subject | Body file |
+   | --- | --- | --- |
+   | Confirm sign up | `Confirm your isMyMediaAI account` | `confirmation.html` |
+   | Reset password | `Reset your isMyMediaAI password` | `recovery.html` |
+   | Change email address | `Confirm your new email for isMyMediaAI` | `email_change.html` |
+
+   These links work even when someone opens the email in a different browser. Without them the
+   default links still work, but only in the browser that signed up.
+4. **Authentication → Attack Protection**: turn on *Prevent use of leaked passwords* (Pro plan;
+   do it for production when you upgrade).
+5. Until custom SMTP is set up (launch milestone), Supabase only sends auth email to members of
+   your Supabase organization, at most a few an hour. That is enough to test staging yourself.
+
+### Turnstile bot check (optional until launch, do staging first)
+
+The app shows the widget only when `TURNSTILE_SITE_KEY` is set, and Supabase checks the token only
+when CAPTCHA is on, so do the steps in this order:
+
+1. Cloudflare dashboard → **Turnstile** → **Add widget**. Name `ismymediaai-staging`, hostname
+   `staging.ismymediaai.com`, mode **Managed**, pre-clearance **No**. **Create**. Keep the page open.
+2. Supabase (staging) → **Authentication → Attack Protection → Enable CAPTCHA protection** on,
+   provider **Turnstile by Cloudflare**, paste the widget's **Secret key**. **Save**.
+3. GitHub → **Settings → Environments → staging → Environment variables → Add variable**:
+   `TURNSTILE_SITE_KEY` = the widget's **Site key** (public by design).
+4. Re-run the latest **Deploy to staging** workflow (Actions → Deploy to staging → Re-run all jobs).
+
+Repeat with a second widget for `ismymediaai.com` and the `production` environment before launch.
+To turn it off, do the steps in reverse order (delete the variable and redeploy first).
+
+### Google and GitHub sign-in (optional)
+
+The buttons appear only for providers listed in the environment variable `AUTH_PROVIDERS`
+(for example `google,github`). For each provider and each environment:
+
+- **GitHub**: github.com → Settings → Developer settings → OAuth Apps → **New OAuth App**.
+  Homepage URL `https://staging.ismymediaai.com`; Authorization callback URL
+  `https://raytxskehcrnbvyeebbf.supabase.co/auth/v1/callback`. Register, then **Generate a new client
+  secret**. In Supabase → Authentication → Sign In / Providers → **GitHub**: on, paste Client ID and
+  secret, **Save**.
+- **Google**: console.cloud.google.com → APIs & Services → **OAuth consent screen** (External, app
+  name isMyMediaAI, your email) → **Credentials → Create credentials → OAuth client ID** → Web
+  application. Authorized JavaScript origin `https://staging.ismymediaai.com`; Authorized redirect URI
+  `https://raytxskehcrnbvyeebbf.supabase.co/auth/v1/callback`. In Supabase → **Google**: on, paste
+  Client ID and secret, **Save**.
+- Then GitHub → Settings → Environments → staging → **Add variable** `AUTH_PROVIDERS` =
+  `google,github` (or just one), and re-run **Deploy to staging**.
+
+For production use `https://ismymediaai.com` and `ifcwdqxukmauazzrmknf` in the URLs above.
 
 ## 6. Cloudflare
 

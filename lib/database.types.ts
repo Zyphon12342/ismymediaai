@@ -255,9 +255,17 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "my_profile":
+            "handle_available":
+{ Args: { "p_handle": string }; Returns: boolean
+                           },
+"my_profile":
 { Args: Record<PropertyKey, never>; Returns: {
-              "avatar_path": string,"banned_until": string,"created_at": string,"display_name": string,"email_verified": boolean,"handle": string,"id": string,"role": Database["public"]['Enums']["user_role"],"show_votes": boolean,"trust_level": number
+              "avatar_path": string,"banned_until": string,"created_at": string,"display_name": string,"email_verified": boolean,"handle": string,"handle_changed_at": string,"id": string,"role": Database["public"]['Enums']["user_role"],"show_votes": boolean,"trust_level": number
+            }[]
+                           },
+"profile_stats":
+{ Args: { "p_user": string }; Returns: {
+              "comment_count": number,"titles_added": number,"vote_count": number
             }[]
                            },
 "refresh_trust_levels":

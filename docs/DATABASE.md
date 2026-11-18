@@ -29,7 +29,10 @@ Security and triggers. `lib/database.types.ts` is generated from it.
 | One level of replies, 15-minute edits, soft delete clears text | comment triggers |
 | One open report per reporter per target | partial unique index |
 | `mod_actions` is append-only, even for admins and the owner | `private.forbid_change` triggers |
-| Handle changes at most once per 30 days | `private.guard_profile_update` |
+| Handle changes at most once per 30 days; no reserved or placeholder-shaped handles | `private.guard_profile_update` |
+| Username picked at sign-up is kept if free, else a `user_…` placeholder | `private.handle_new_user` |
+| Avatars only in the user's own folder, images up to 2 MB, at most 3 files | `avatars` bucket and storage policies |
+| Rate limits (profile edits: 10 an hour); errors use SQLSTATE `RL429`, mapped to HTTP 429 | `private.rate_limit`, called from triggers |
 | Nightly trust promotion (verified, 72 h old) | `pg_cron` job `refresh-trust-levels`, 03:15 UTC |
 
 Public profile columns are `id, handle, display_name, avatar_path, role, show_votes, created_at`.

@@ -15,7 +15,7 @@ concurrency:
 env:
   NODE_VERSION: "22"
   # Only the services the tests need; keeps CI start-up fast.
-  SUPABASE_EXCLUDE: studio,realtime,edge-runtime,logflare,vector,imgproxy,supavisor,storage-api
+  SUPABASE_EXCLUDE: studio,realtime,edge-runtime,logflare,vector,imgproxy,supavisor
 
 jobs:
   static:

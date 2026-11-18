@@ -43,3 +43,47 @@ export async function publishedTitle(slug: string) {
   if (error) throw error;
   return data.id;
 }
+
+/**
+ * Sign in the way the browser does and return the Cookie header the app's
+ * server client reads, so route handlers see a real session.
+ */
+export async function appSessionCookie(email: string, password: string): Promise<string> {
+  const { createServerClient } = await import("@supabase/ssr");
+  const jar = new Map<string, string>();
+  const client = createServerClient<Database>(SUPABASE_URL, PUBLISHABLE_KEY, {
+    cookies: {
+      getAll: () => [...jar].map(([name, value]) => ({ name, value })),
+      setAll: (toSet) => {
+        for (const { name, value } of toSet) {
+          if (value) jar.set(name, value);
+          else jar.delete(name);
+        }
+      },
+    },
+  });
+  const { error } = await client.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+  return [...jar].map(([n, v]) => `${n}=${v}`).join("; ");
+}
+
+/** A confirmed user with a known handle, plus a signed-in Data API client and app cookie. */
+export async function namedUser(prefix: string, trustLevel = 1) {
+  const handle = `${prefix}_${crypto.randomUUID().replace(/-/g, "").slice(0, 8)}`;
+  const email = `${handle}@example.test`;
+  const password = `pw-${crypto.randomUUID()}`;
+  const a = admin();
+  const { data, error } = await a.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { handle },
+  });
+  if (error || !data.user) throw error ?? new Error("createUser failed");
+  const { error: upd } = await a.from("profiles").update({ trust_level: trustLevel }).eq("id", data.user.id);
+  if (upd) throw upd;
+  const client = anon();
+  const { error: signInError } = await client.auth.signInWithPassword({ email, password });
+  if (signInError) throw signInError;
+  return { id: data.user.id, handle, email, password, client, cookie: await appSessionCookie(email, password) };
+}
