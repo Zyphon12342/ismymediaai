@@ -67,6 +67,8 @@ export function Turnstile({
         widget.current = window.turnstile.render(node, {
           sitekey: siteKey,
           action,
+          // Match the site's theme; "auto" follows the device like the site does.
+          theme: document.documentElement.dataset.theme ?? "auto",
           callback: (t: string) => cb.current(t),
           "expired-callback": () => cb.current(null),
           "error-callback": () => cb.current(null),

@@ -35,6 +35,9 @@ export default function PrivacyPage() {
           account or moderator pages. In the EU, EEA, UK and Switzerland, PostHog stores nothing and records nothing until
           you accept. You can change your choice any time with <em>Cookie settings</em> at the bottom of every page.
         </p>
+        <p>
+          If you pick Light or Dark at the bottom of the page, a cookie remembers that choice. It holds nothing else.
+        </p>
         <p>Sign-in and sign-up are protected by Cloudflare Turnstile, which checks for bots.</p>
       </section>
       <section className="space-y-2">
