@@ -71,10 +71,25 @@ async function main() {
     return true;
   }
 
+  // One source failing (Open Library's trending list is slow) must not stop
+  // the others, so each list is fetched with retries and errors are logged.
+  async function list<T>(name: string, fetchList: () => Promise<T[]>): Promise<T[]> {
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        return await fetchList();
+      } catch (err) {
+        console.warn(`${name} list failed (attempt ${attempt} of 3):`, err instanceof Error ? err.message : err);
+        if (attempt < 3) await sleep(5000 * attempt);
+      }
+    }
+    stats.failed++;
+    return [];
+  }
+
   for (const kind of ["movie", "tv_show"] as const) {
     let done = 0;
     for (let page = 1; done < wanted[kind] && page <= 10; page++) {
-      const results = await tmdb.popular(kind, page);
+      const results = await list(`TMDB ${kind} page ${page}`, () => tmdb.popular(kind, page));
       if (!results.length) break;
       for (const r of results) {
         if (done >= wanted[kind]) break;
@@ -86,7 +101,7 @@ async function main() {
 
   if (wanted.book > 0) {
     let done = 0;
-    for (const id of await ol.trending(Math.min(wanted.book * 2, 100))) {
+    for (const id of await list("Open Library trending", () => ol.trending(Math.min(wanted.book * 2, 100)))) {
       if (done >= wanted.book) break;
       if (await add(() => ol.detail(id), id)) done++;
       await sleep(400); // Open Library asks clients to stay gentle

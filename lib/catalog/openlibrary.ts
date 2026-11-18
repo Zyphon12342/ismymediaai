@@ -112,11 +112,11 @@ export function parseOpenLibraryTrending(body: unknown): string[] {
 export class OpenLibraryClient {
   constructor(private readonly fetchFn: FetchLike = fetch) {}
 
-  private async get(path: string, params?: Record<string, string>): Promise<unknown> {
+  private async get(path: string, params?: Record<string, string>, timeoutMs = 8000): Promise<unknown> {
     const url = `${OPEN_LIBRARY}${path}${params ? `?${new URLSearchParams(params)}` : ""}`;
     const res = await this.fetchFn(url, {
       headers: { "User-Agent": USER_AGENT, Accept: "application/json" },
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(timeoutMs),
     });
     if (res.status === 404) throw new CatalogError("Not found in Open Library.", 404);
     if (!res.ok) throw new CatalogError("Open Library is not answering right now.");
@@ -129,9 +129,14 @@ export class OpenLibraryClient {
     return parseOpenLibrarySearch(await this.get("/search.json", { q, fields: OpenLibraryClient.FIELDS, limit: "10" }));
   }
 
-  /** Works trending this year. Used to seed a new catalogue. */
-  async trending(limit = 40): Promise<string[]> {
-    return parseOpenLibraryTrending(await this.get("/trending/yearly.json", { limit: String(Math.min(limit, 100)) }));
+  /**
+   * Works trending this year. Used to seed a new catalogue. The list is slow
+   * to build on Open Library's side, so it gets a longer timeout.
+   */
+  async trending(limit = 40, timeoutMs = 45000): Promise<string[]> {
+    return parseOpenLibraryTrending(
+      await this.get("/trending/yearly.json", { limit: String(Math.min(limit, 100)) }, timeoutMs),
+    );
   }
 
   async detail(externalId: string): Promise<LookupDetail> {
