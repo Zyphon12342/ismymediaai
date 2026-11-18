@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test";
+import { trimEnd } from "../lib/services/text";
 
 const MAILPIT = process.env.MAILPIT_URL ?? "http://127.0.0.1:54324";
 
@@ -7,7 +8,7 @@ function callbackLink(text: string): string | null {
   for (const word of text.split(/\s/)) {
     const start = word.indexOf("http");
     if (start === -1) continue;
-    const candidate = word.slice(start).replace(/[)>\]]+$/, "");
+    const candidate = trimEnd(word.slice(start), ")>]");
     try {
       const url = new URL(candidate);
       if (url.pathname === "/auth/callback") return url.toString();

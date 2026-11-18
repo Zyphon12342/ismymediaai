@@ -1,5 +1,6 @@
 /** Account and profile rules shared by pages, routes and tests. Pure functions only. */
 import type { ProfileUpdate } from "@/lib/validation/profile";
+import { trimEnd } from "./text";
 
 export const HANDLE_CHANGE_DAYS = 30;
 const DAY_MS = 86_400_000;
@@ -38,7 +39,7 @@ export function safeNextPath(next: string | null | undefined, fallback = "/"): s
 export function avatarUrl(supabaseUrl: string, path: string | null | undefined): string | null {
   if (!path) return null;
   const encoded = path.split("/").map(encodeURIComponent).join("/");
-  return `${supabaseUrl.replace(/\/+$/, "")}/storage/v1/object/public/avatars/${encoded}`;
+  return `${trimEnd(supabaseUrl, "/")}/storage/v1/object/public/avatars/${encoded}`;
 }
 
 /** One or two letters for the avatar placeholder. */
