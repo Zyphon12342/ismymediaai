@@ -17,6 +17,10 @@ export default function PrivacyPage() {
           (or the Google or GitHub account you signed in with). What you post: votes, comments, evidence links and
           reports. Votes are private unless you choose to show them on your profile.
         </p>
+        <p>
+          Correction requests: the name, email address and message you send. Only moderators see them, we use them only to
+          handle and reply to the request, and we delete them a year after the request is closed.
+        </p>
         <p>Accounts, posts and votes are stored with Supabase. The site runs on Cloudflare.</p>
       </section>
       <section className="space-y-2">

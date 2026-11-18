@@ -14,6 +14,7 @@ import { getMediaBySlug, getMyVote, relatedMedia, slugById } from "@/lib/data/me
 import { getMyProfile } from "@/lib/data/profiles";
 import { publicEnv } from "@/lib/env";
 import { needsCommentTurnstile } from "@/lib/services/comments";
+import { correctionPath } from "@/lib/services/corrections";
 import { KIND_LABELS, titlePath } from "@/lib/services/labels";
 import { groupCredits, roleLabel } from "@/lib/services/media";
 import { faqJsonLd, relatedReason, titleFaq, titleQuestion, workJsonLd } from "@/lib/services/seo";
@@ -206,8 +207,13 @@ export default async function TitlePage({ params, searchParams }: PageProps<"/ti
           "Details added by a member."
         )}
       </p>
-      {me?.emailVerified && m.status === "published" ? (
-        <ReportButton targetType="media" targetId={m.id} label="Report a problem with this title" />
+      {m.status === "published" ? (
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+          {me?.emailVerified ? <ReportButton targetType="media" targetId={m.id} label="Report a problem with this title" /> : null}
+          <Link href={correctionPath(m.slug)} className="text-zinc-700 underline hover:text-zinc-900">
+            Request a correction
+          </Link>
+        </div>
       ) : null}
 
       {m.status === "published" ? (

@@ -12,6 +12,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   if (error) throw error;
   return [
     { url: new URL("/", site).toString(), changeFrequency: "daily", priority: 1 },
+    { url: new URL("/corrections", site).toString(), changeFrequency: "yearly", priority: 0.2 },
     ...(data ?? []).map((m) => ({
       url: new URL(titlePath(m.slug), site).toString(),
       lastModified: new Date(m.updated_at),

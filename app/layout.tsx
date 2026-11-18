@@ -27,6 +27,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               <Link href="/privacy" className="underline">
                 Privacy
               </Link>
+              <Link href="/corrections" className="underline">
+                Corrections
+              </Link>
               {publicEnv().NEXT_PUBLIC_POSTHOG_KEY ? <CookieSettingsButton /> : null}
             </p>
             <p>

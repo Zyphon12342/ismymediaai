@@ -54,6 +54,61 @@ describe("reports and the moderator queue", () => {
     expect((await send(mod.cookie, "/api/mod/actions", "POST", { action: "ban", targetType: "profile", targetId: mod.id })).status).toBe(403);
   });
 
+  it("merges a duplicate title: votes and comments move and the old page redirects", async () => {
+    const tag = crypto.randomUUID().slice(0, 8);
+    const keepSlug = `it-keep-${tag}`;
+    const goneSlug = `it-gone-${tag}`;
+    const keep = await publishedTitle(keepSlug);
+    const gone = await publishedTitle(goneSlug);
+    const voter = await namedUser("mvoter");
+    const reporter = await namedUser("mduprep");
+    const mod = await moderator("mmerge");
+    expect((await send(voter.cookie, `/api/media/${gone}/vote`, "PUT", { value: "uses_ai" })).status).toBeLessThan(300);
+    expect((await send(voter.cookie, `/api/media/${gone}/comments`, "POST", { body: "Same film as the other one" })).status).toBe(201);
+    expect((await send(reporter.cookie, "/api/reports", "POST", { targetType: "media", targetId: gone, reason: "duplicate" })).status).toBe(201);
+
+    expect((await send(voter.cookie, "/api/mod/merge", "POST", { fromId: gone, into: keepSlug })).status).toBe(403);
+    expect((await send(mod.cookie, "/api/mod/merge", "POST", { fromId: gone, into: "no-such-title-" + tag })).status).toBe(404);
+    expect((await send(mod.cookie, "/api/mod/merge", "POST", { fromId: gone, into: `${goneSlug}` })).status).toBe(422);
+    const res = await send(mod.cookie, "/api/mod/merge", "POST", { fromId: gone, into: `${APP_URL}/titles/${keepSlug}`, reason: "Duplicate" });
+    expect(res.status).toBe(201);
+
+    const db = admin();
+    expect((await db.from("votes").select("media_id").eq("user_id", voter.id)).data).toEqual([{ media_id: keep }]);
+    expect((await db.from("comments").select("media_id").eq("user_id", voter.id)).data).toEqual([{ media_id: keep }]);
+    expect((await db.from("media").select("merged_into").eq("id", gone).single()).data?.merged_into).toBe(keep);
+    const queue = (await (await send(mod.cookie, "/api/mod/queue", "GET")).json()) as Queue;
+    expect(queue.items.find((i) => i.targetId === gone)).toBeUndefined();
+
+    const page = await fetch(`${APP_URL}/titles/${goneSlug}`, { redirect: "manual" });
+    expect([301, 307, 308]).toContain(page.status);
+    expect(page.headers.get("location") ?? "").toContain(`/titles/${keepSlug}`);
+  });
+
+  it("takes a correction request from a signed-out visitor and lets a moderator resolve it", async () => {
+    const id = await publishedTitle(`it-fix-${crypto.randomUUID().slice(0, 8)}`);
+    const email = `legal-${crypto.randomUUID().slice(0, 8)}@studio.example`;
+    const request = { mediaId: id, name: "Studio Legal", email, relationship: "rights_holder", message: "No generative AI was used.", evidenceUrl: "https://studio.example/statement" };
+    expect((await send(null, "/api/corrections", "POST", { ...request, email: "nope" })).status).toBe(422);
+    expect((await send(null, "/api/corrections", "POST", { ...request, mediaId: crypto.randomUUID() })).status).toBe(404);
+    expect((await send(null, "/api/corrections", "POST", request)).status).toBe(201);
+
+    const member = await namedUser("mfixer");
+    type Fixes = { corrections: { id: string; email: string; media: { title: string } | null }[] };
+    expect((await send(member.cookie, "/api/mod/queue", "GET")).status).toBe(403);
+    const mod = await moderator("mfixmod");
+    const queue = (await (await send(mod.cookie, "/api/mod/queue", "GET")).json()) as Fixes;
+    const item = queue.corrections.find((c) => c.email === email);
+    expect(item?.media).not.toBeNull();
+
+    expect((await send(member.cookie, `/api/mod/corrections/${item!.id}`, "POST", { status: "resolved" })).status).toBe(403);
+    expect((await send(mod.cookie, `/api/mod/corrections/${item!.id}`, "POST", { status: "maybe" })).status).toBe(422);
+    expect((await send(mod.cookie, `/api/mod/corrections/${item!.id}`, "POST", { status: "resolved", note: "Fixed credits" })).status).toBe(201);
+    expect((await send(mod.cookie, `/api/mod/corrections/${item!.id}`, "POST", { status: "declined" })).status).toBe(404);
+    const after = (await (await send(mod.cookie, "/api/mod/queue", "GET")).json()) as Fixes;
+    expect(after.corrections.find((c) => c.email === email)).toBeUndefined();
+  });
+
   it("validates input", async () => {
     const mod = await moderator("mval");
     expect((await send(mod.cookie, "/api/mod/actions", "POST", { action: "merge", targetType: "media", targetId: crypto.randomUUID() })).status).toBe(422);
