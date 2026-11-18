@@ -62,7 +62,7 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "http://127.0.0.1:5
 const SECRET_KEY = process.env.SUPABASE_SECRET_KEY ?? "sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz";
 
 /** A verified account at the given trust level, created directly through the local admin API. */
-export async function trustedUser(prefix: string, trustLevel = 1) {
+export async function trustedUser(prefix: string, trustLevel = 1, role: "user" | "moderator" | "admin" = "user") {
   const handle = uniqueHandle(prefix);
   const email = `${handle}@example.test`;
   const password = `pw-${crypto.randomUUID()}`;
@@ -77,7 +77,7 @@ export async function trustedUser(prefix: string, trustLevel = 1) {
   const upd = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${id}`, {
     method: "PATCH",
     headers,
-    body: JSON.stringify({ trust_level: trustLevel }),
+    body: JSON.stringify({ trust_level: trustLevel, role }),
   });
   if (!upd.ok) throw new Error(`trust ${upd.status}`);
   return { id, handle, email, password };

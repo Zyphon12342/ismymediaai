@@ -135,6 +135,16 @@ insert into private.blocked_domains (domain) values ('malware.example');  -- als
 
 To remove one: `delete from private.blocked_terms where term = 'exampleslur';`
 
+## 8. Make yourself a moderator or admin
+
+Moderators see **Mod queue** in the header and can hide, restore and ban. In the Supabase dashboard for the project open **SQL Editor** → **New query**, paste this with your username, then click **Run**:
+
+```sql
+update public.profiles set role = 'admin', trust_level = 2 where handle = 'your_username';
+```
+
+After that, promote other moderators from SQL the same way with `role = 'moderator'`.
+
 ## How a change reaches production
 
 1. Open a PR. CI must be green.

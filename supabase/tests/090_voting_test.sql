@@ -1,6 +1,6 @@
 begin;
 \ir _helpers.psql
-select plan(7);
+select plan(8);
 
 select tests.create_media('vote-film');
 select tests.create_media('pending-film', 'movie', 'pending');
@@ -28,6 +28,11 @@ select tests.authenticate_as((select id from public.profiles where handle = 'unv
 select throws_ok(
   $$ select public.cast_vote((select id from public.media where slug = 'vote-film'), 'uses_ai') $$,
   '42501', null, 'unverified accounts cannot vote');
+
+reset role;
+select lives_ok(
+  $$ delete from public.media where slug = 'vote-film' $$,
+  'a title with votes can be deleted');
 
 select * from finish();
 rollback;

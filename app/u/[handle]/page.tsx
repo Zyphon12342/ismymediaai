@@ -12,6 +12,7 @@ import {
   listProfileVotes,
 } from "@/lib/data/profiles";
 import { formatDate, memberSince } from "@/lib/services/account";
+import { ReportButton } from "@/components/moderation/report-button";
 import { commentPermalink } from "@/lib/services/comments";
 import { KIND_LABELS, VOTE_LABELS, titlePath } from "@/lib/services/labels";
 import { createClient } from "@/lib/supabase/server";
@@ -81,6 +82,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps<"/
             ) : null}
           </p>
           <p className="text-sm text-zinc-600">Member since {memberSince(new Date(profile.createdAt))}</p>
+          {me?.emailVerified && !isOwner ? <ReportButton targetType="profile" targetId={profile.id} label="Report this profile" /> : null}
           <dl className="flex gap-6 pt-2 text-sm">
             <div>
               <dt className="text-zinc-600">Votes</dt>

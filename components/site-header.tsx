@@ -20,6 +20,11 @@ export async function SiteHeader() {
         </Link>
         {me ? (
           <div className="flex items-center gap-3 text-sm">
+            {me.role !== "user" ? (
+              <Link href="/mod" className="text-zinc-800 hover:underline">
+                Mod queue
+              </Link>
+            ) : null}
             <Link href={`/u/${me.handle}`} className="flex items-center gap-2 hover:underline">
               <Avatar path={me.avatarPath} handle={me.handle} displayName={me.displayName} size={28} />
               <span>@{me.handle}</span>

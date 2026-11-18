@@ -30,6 +30,10 @@ Security and triggers. `lib/database.types.ts` is generated from it.
 | 10 new comments an hour and 20 edits or deletes an hour per user; no edits on a locked title | `comments_write_checks` trigger |
 | Blocked words (whole word, any case) and blocked evidence-link domains, both admin-managed lists | `private.blocked_terms`, `private.blocked_domains` |
 | One open report per reporter per target | partial unique index |
+| 20 reports a day; the target must exist, be visible, and not be your own comment or profile | `reports_check_insert` trigger |
+| Three open reports from distinct trust 1+ users (or one from trust 2) hide a comment until review, logged with no actor | `reports_auto_hide` trigger |
+| Every moderator action (hide, restore, remove, lock comments, ban, trust, role) runs in `public.moderate()`, which closes the target's open reports and writes `mod_actions`; only admins act on moderators or change roles | `public.moderate()` |
+| Deleting a title with votes does not recreate its tally | `private.recount_tally` |
 | `mod_actions` is append-only, even for admins and the owner | `private.forbid_change` triggers |
 | Handle changes at most once per 30 days; no reserved or placeholder-shaped handles | `private.guard_profile_update` |
 | Username picked at sign-up is kept if free, else a `user_…` placeholder | `private.handle_new_user` |

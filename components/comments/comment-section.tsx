@@ -5,6 +5,7 @@ import { formatDate } from "@/lib/services/account";
 import { AI_AREA_LABELS, canEditComment, commentAnchor } from "@/lib/services/comments";
 import { profilePath, titlePath } from "@/lib/services/labels";
 import type { CommentSort } from "@/lib/validation/comment";
+import { ReportButton } from "@/components/moderation/report-button";
 import { CommentActions } from "./comment-actions";
 import { CommentBody } from "./comment-body";
 import { CommentForm } from "./comment-form";
@@ -94,6 +95,7 @@ function Comment({
               needsTurnstile={needsTurnstile}
             />
           ) : null}
+          {viewer?.verified && !mine && c.status === "published" ? <ReportButton targetType="comment" targetId={c.id} /> : null}
         </>
       )}
     </article>

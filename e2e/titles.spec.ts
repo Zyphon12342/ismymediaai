@@ -134,6 +134,46 @@ test("comment with evidence, reply, edit, link and delete", async ({ page }) => 
   await expect(section.getByText("Thanks, that matches the credits.")).toHaveCount(0);
 });
 
+test("report a comment, then a moderator hides it from the queue", async ({ browser }) => {
+  const writer = await trustedUser("spammer");
+  const reporter = await trustedUser("flagger");
+  const mod = await trustedUser("moddy", 2, "moderator");
+  const body = `Cheap pills at spam.example ${Date.now()}`;
+
+  const w = await (await browser.newContext()).newPage();
+  await signIn(w, writer.email, writer.password, "/titles/example-street-2030");
+  await w.locator("#comments").getByLabel("Your comment").fill(body);
+  await w.locator("#comments").getByRole("button", { name: "Post comment" }).click();
+  await expect(w.getByText(body)).toBeVisible();
+  await w.context().close();
+
+  const r = await (await browser.newContext()).newPage();
+  await signIn(r, reporter.email, reporter.password, "/titles/example-street-2030");
+  const comment = r.locator("#comments article").filter({ hasText: body });
+  await comment.getByRole("button", { name: "Report" }).click();
+  await comment.getByLabel("What is wrong?").selectOption("spam");
+  await comment.getByLabel(/Details/).fill("An advert");
+  await comment.getByRole("button", { name: "Send report" }).click();
+  await expect(comment.getByRole("status")).toHaveText(/A moderator will take a look/);
+  await r.context().close();
+
+  const m = await (await browser.newContext()).newPage();
+  await signIn(m, mod.email, mod.password, "/mod");
+  await expect(m.getByRole("heading", { name: "Moderator queue" })).toBeVisible();
+  const item = m.getByRole("listitem").filter({ hasText: body });
+  await expect(item.getByText("Spam: An advert", { exact: false })).toBeVisible();
+  expect((await new AxeBuilder({ page: m }).withTags(WCAG).analyze()).violations).toEqual([]);
+  await item.getByPlaceholder("Reason for the log (optional)").fill("Advert");
+  await item.getByRole("button", { name: "Hide", exact: true }).click();
+  await expect(m.getByRole("listitem").filter({ hasText: body })).toHaveCount(0);
+
+  const anon = await (await browser.newContext()).newPage();
+  await anon.goto("/titles/example-street-2030");
+  await expect(anon.getByText(body)).toHaveCount(0);
+  await anon.context().close();
+  await m.context().close();
+});
+
 test("signed-out visitors are asked to sign in to vote", async ({ page }) => {
   await page.goto("/");
   const first = page.locator("main ul li a").first();

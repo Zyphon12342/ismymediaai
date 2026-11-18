@@ -4,6 +4,7 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { cache } from "react";
 import { CommentSection } from "@/components/comments/comment-section";
 import { Cover } from "@/components/media/cover";
+import { ReportButton } from "@/components/moderation/report-button";
 import { VoteBar } from "@/components/media/vote-bar";
 import { VoteButtons } from "@/components/media/vote-buttons";
 import { listComments, myCommentCount } from "@/lib/data/comments";
@@ -167,6 +168,9 @@ export default async function TitlePage({ params, searchParams }: PageProps<"/ti
           "Details added by a member."
         )}
       </p>
+      {me?.emailVerified && m.status === "published" ? (
+        <ReportButton targetType="media" targetId={m.id} label="Report a problem with this title" />
+      ) : null}
     </article>
   );
 }

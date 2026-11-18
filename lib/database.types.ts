@@ -271,6 +271,14 @@ isOneToOne: false
 "handle_available":
 { Args: { "p_handle": string }; Returns: boolean
                            },
+"mod_profile_cards":
+{ Args: { "p_ids": (string)[] }; Returns: {
+              "banned_until": string,"display_name": string,"handle": string,"id": string,"role": Database["public"]['Enums']["user_role"],"trust_level": number
+            }[]
+                           },
+"moderate":
+{ Args: { "p_action": Database["public"]['Enums']["mod_action_type"],"p_reason"?: string,"p_target": string,"p_target_type": Database["public"]['Enums']["report_target"],"p_value"?: number }; Returns: number
+                           },
 "my_comment_count":
 { Args: Record<PropertyKey, never>; Returns: number
                            },
