@@ -260,6 +260,9 @@ isOneToOne: false
               "counted_total": number,"cover_url": string,"created_at": string,"genres": (string)[],"id": string,"kind": Database["public"]['Enums']["media_kind"],"no_ai": number,"release_year": number,"slug": string,"title": string,"unsure": number,"uses_ai": number
             }[]
                            },
+"cast_vote":
+{ Args: { "p_media": string,"p_value": Database["public"]['Enums']["vote_value"] }; Returns: Database["public"]['Enums']["vote_value"]
+                           },
 "create_media":
 { Args: { "p": Json }; Returns: {
               "existing": boolean,"id": string,"slug": string,"status": Database["public"]['Enums']["content_status"]

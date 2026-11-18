@@ -4,7 +4,9 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { cache } from "react";
 import { Cover } from "@/components/media/cover";
 import { VoteBar } from "@/components/media/vote-bar";
-import { getMediaBySlug, slugById } from "@/lib/data/media";
+import { VoteButtons } from "@/components/media/vote-buttons";
+import { getMediaBySlug, getMyVote, slugById } from "@/lib/data/media";
+import { getMyProfile } from "@/lib/data/profiles";
 import { KIND_LABELS, titlePath } from "@/lib/services/labels";
 import { groupCredits, roleLabel } from "@/lib/services/media";
 import { sourceUrl, verdictSentence } from "@/lib/services/verdict";
@@ -40,6 +42,10 @@ export default async function TitlePage({ params }: PageProps<"/titles/[slug]">)
     const target = await slugById(await createClient(), m.mergedInto);
     if (target) permanentRedirect(titlePath(target));
   }
+  const db = await createClient();
+  const me = await getMyProfile(db);
+  const myVote = me ? await getMyVote(db, m.id, me.id) : null;
+  const voteState = !me ? "signed_out" : !me.emailVerified ? "unverified" : me.trustLevel < 1 ? "new" : "ok";
   const src = sourceUrl(m.source, m.externalId);
   const groups = groupCredits(m.credits);
 
@@ -71,6 +77,14 @@ export default async function TitlePage({ params }: PageProps<"/titles/[slug]">)
             })}
           </p>
           <VoteBar tally={m.tally} size="lg" showLegend />
+          {m.status === "published" ? (
+            <section aria-labelledby="vote-heading" className="space-y-2 rounded-lg border border-zinc-200 p-4">
+              <h2 id="vote-heading" className="text-sm font-semibold">
+                Did it use generative AI?
+              </h2>
+              <VoteButtons mediaId={m.id} slug={m.slug} initial={myVote} state={voteState} />
+            </section>
+          ) : null}
           {m.genres.length ? (
             <ul className="flex flex-wrap gap-2" aria-label="Genres">
               {m.genres.map((g) => (

@@ -69,3 +69,36 @@ test("a manual entry waits for review", async ({ page }) => {
   await page.getByRole("button", { name: "Submit for review" }).click();
   await expect(page.getByText("waiting for a moderator")).toBeVisible();
 });
+
+test("vote on a title, change it, and see it on your profile", async ({ page }) => {
+  await deleteTitle("tmdb", "tv/910001");
+  const u = await trustedUser("voter");
+  await signIn(page, u.email, u.password, "/titles/new");
+  await page.getByRole("radio", { name: "TV show" }).check({ force: true });
+  await page.getByLabel("Title to look up").fill("example street");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await page.getByRole("button", { name: /Select Example Street/ }).click();
+  await page.getByRole("button", { name: "Add title" }).click();
+  await expect(page).toHaveURL(/\/titles\/example-street-2030/);
+
+  const group = page.getByRole("group", { name: "Your vote" });
+  await group.getByRole("button", { name: "Uses gen AI" }).click();
+  await expect(group.getByRole("button", { name: "Uses gen AI" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId("verdict")).toHaveText(/Too few votes for a community verdict yet: 1 vote so far/);
+  await group.getByRole("button", { name: "No gen AI" }).click();
+  await expect(group.getByRole("button", { name: "No gen AI" })).toHaveAttribute("aria-pressed", "true");
+  await expect(group.getByRole("button", { name: "Uses gen AI" })).toHaveAttribute("aria-pressed", "false");
+
+  await page.goto(`/u/${u.handle}?tab=votes`);
+  await expect(page.getByText("Only you can see this list.")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Example Street/ })).toBeVisible();
+});
+
+test("signed-out visitors are asked to sign in to vote", async ({ page }) => {
+  await page.goto("/");
+  const first = page.locator("main ul li a").first();
+  if ((await first.count()) === 0) test.skip();
+  await first.click();
+  await expect(page.getByRole("link", { name: "Sign in" }).last()).toBeVisible();
+  await expect(page.getByText("to vote.")).toBeVisible();
+});

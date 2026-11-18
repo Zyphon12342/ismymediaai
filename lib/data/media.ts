@@ -164,3 +164,13 @@ export async function existingCatalogueSlugs(
   if (error) throw error;
   return new Map((data ?? []).flatMap((r) => (r.external_id ? [[r.external_id, r.slug] as [string, string]] : [])));
 }
+
+/** The signed-in user's own vote on a title, if any. */
+export async function getMyVote(
+  db: DbClient,
+  mediaId: string,
+  userId: string,
+): Promise<Database["public"]["Enums"]["vote_value"] | null> {
+  const { data } = await db.from("votes").select("value").eq("media_id", mediaId).eq("user_id", userId).maybeSingle();
+  return data?.value ?? null;
+}
