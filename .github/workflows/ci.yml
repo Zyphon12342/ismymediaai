@@ -82,6 +82,8 @@ jobs:
         run: npm run build:worker
         env:
           NEXT_PUBLIC_BUILD_SHA: ${{ github.sha }}
+          # Render the sign-in buttons so the tests and the accessibility scan cover them.
+          NEXT_PUBLIC_AUTH_PROVIDERS: google,github
       - name: Start the Worker locally (workerd)
         run: |
           npx wrangler dev --port 8787 --ip 127.0.0.1 > wrangler.log 2>&1 &

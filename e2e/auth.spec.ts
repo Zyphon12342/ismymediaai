@@ -8,6 +8,12 @@ test("sign-in page renders @smoke", async ({ page }) => {
   await page.goto("/sign-in");
   await expect(page.getByRole("heading", { name: "Sign in", level: 1 })).toBeVisible();
   await expect(page.getByLabel("Email")).toBeVisible();
+  // Google and GitHub buttons appear only where AUTH_PROVIDERS is set, each with its logo.
+  for (const name of ["Continue with Google", "Continue with GitHub"]) {
+    const button = page.getByRole("button", { name, exact: true });
+    if ((await button.count()) === 0) continue;
+    await expect(button.locator("svg")).toBeVisible();
+  }
 });
 
 for (const path of ["/sign-in", "/sign-up", "/forgot-password"]) {
