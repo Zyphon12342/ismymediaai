@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Turnstile } from "@/components/turnstile";
 import { Alert, Button, Field, inputClass } from "@/components/ui";
 import type { LookupDetail, LookupResult, MediaKind } from "@/lib/catalog/types";
@@ -63,18 +63,47 @@ function GenrePicker({ genres, kind, value, onChange }: { genres: Genre[]; kind:
   );
 }
 
-export function AddTitleForm({ genres, siteKey }: { genres: Genre[]; siteKey?: string }) {
+/** A catalogue entry picked elsewhere (the home page's "Add" button), opened straight away. */
+export interface InitialPick {
+  kind: MediaKind;
+  source: LookupResult["source"];
+  id: string;
+}
+
+function genresFor(all: Genre[], kind: MediaKind, suggested: string[]): string[] {
+  return suggested.filter((g) => all.some((x) => x.slug === g && x.kinds.includes(kind))).slice(0, 3);
+}
+
+export function AddTitleForm({ genres, siteKey, initial }: { genres: Genre[]; siteKey?: string; initial?: InitialPick }) {
   const router = useRouter();
   const [mode, setMode] = useState<"catalogue" | "manual">("catalogue");
-  const [kind, setKind] = useState<MediaKind>("movie");
+  const [kind, setKind] = useState<MediaKind>(initial?.kind ?? "movie");
   const [results, setResults] = useState<Result[] | null>(null);
   const [detail, setDetail] = useState<LookupDetail | null>(null);
   const [picked, setPicked] = useState<string[]>([]);
   const [credits, setCredits] = useState<{ name: string; role: string }[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(!!initial);
   const [token, setToken] = useState<string | null>(null);
   const [reset, setReset] = useState(0);
+
+  useEffect(() => {
+    if (!initial) return;
+    let live = true;
+    void api<LookupDetail>(`/api/lookup/detail?${new URLSearchParams({ source: initial.source, id: initial.id })}`).then((r) => {
+      if (!live) return;
+      setBusy(false);
+      if (!r.ok) return setError(r.message);
+      setKind(r.data.kind);
+      setDetail(r.data);
+      setPicked(genresFor(genres, r.data.kind, r.data.genres));
+    });
+    return () => {
+      live = false;
+    };
+    // Only on first load: the pick comes from the URL.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function changeKind(k: MediaKind) {
     setKind(k);
@@ -105,7 +134,7 @@ export function AddTitleForm({ genres, siteKey }: { genres: Genre[]; siteKey?: s
     setBusy(false);
     if (!r.ok) return setError(r.message);
     setDetail(r.data);
-    setPicked(r.data.genres.filter((g) => genres.some((x) => x.slug === g && x.kinds.includes(kind))).slice(0, 3));
+    setPicked(genresFor(genres, kind, r.data.genres));
   }
 
   async function submit(body: unknown) {

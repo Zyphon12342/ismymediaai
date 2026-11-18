@@ -47,6 +47,23 @@ test("add a film from the catalogue, then find it by browsing", async ({ page })
   await expect(page.getByRole("link", { name: /The Sample Film/ })).toBeVisible();
 });
 
+test("searching the site also shows catalogue matches, which can be added in one step", async ({ page }) => {
+  await deleteTitle("tmdb", "movie/900002");
+  await page.goto("/?q=sample%20film");
+  const more = page.getByRole("region", { name: "More matches from TMDB, Open Library and AniList" });
+  // Added in the first test, so it links to its page.
+  await expect(more.getByRole("link", { name: "Open The Sample Film (2031)" })).toHaveAttribute("href", /the-sample-film-2031/);
+  await expect(more.getByRole("link", { name: "Add Sample Film Two (2033)" })).toBeVisible();
+  expect((await new AxeBuilder({ page }).withTags(WCAG).analyze()).violations).toEqual([]);
+
+  const u = await trustedUser("searcher");
+  await signIn(page, u.email, u.password, "/?q=sample%20film");
+  await page.getByRole("link", { name: "Add Sample Film Two (2033)" }).click();
+  await expect(page).toHaveURL(/\/titles\/new\?/);
+  await page.getByRole("button", { name: "Add title" }).click();
+  await expect(page).toHaveURL(/\/titles\/sample-film-two-2033/);
+});
+
 test("browse page is accessible @smoke", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("search")).toBeVisible();
