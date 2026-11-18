@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/validation/zod";
 import { mediaKind } from "./common";
 
 export const catalogSource = z.enum(["tmdb", "openlibrary"]);

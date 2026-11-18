@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { publicEnv } from "@/lib/env";
 import { browserOrigin } from "@/lib/http/origin";
 import { REQUEST_ID_HEADER, requestIdFrom } from "@/lib/http/request-id";
-import { securityHeaders } from "@/lib/http/security-headers";
+import { contentSecurityPolicy, newNonce, securityHeaders } from "@/lib/http/security-headers";
 import { trimEnd } from "@/lib/services/text";
 import { refreshSession } from "@/lib/supabase/middleware";
 
@@ -38,11 +38,22 @@ export async function middleware(request: NextRequest) {
   const requestId = requestIdFrom(request.headers);
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set(REQUEST_ID_HEADER, requestId);
+  // Next reads the nonce from the request's CSP and adds it to its own
+  // scripts; components read x-nonce for theirs.
+  const nonce = newNonce();
+  const csp = contentSecurityPolicy({
+    nonce,
+    supabaseUrl: env.NEXT_PUBLIC_SUPABASE_URL,
+    dev: process.env.NODE_ENV === "development",
+    deployed,
+  });
+  requestHeaders.set("x-nonce", nonce);
+  requestHeaders.set("Content-Security-Policy", csp);
 
   const response = await refreshSession(request, () => NextResponse.next({ request: { headers: requestHeaders } }));
 
   response.headers.set(REQUEST_ID_HEADER, requestId);
-  for (const [k, v] of Object.entries(securityHeaders(deployed))) response.headers.set(k, v);
+  for (const [k, v] of Object.entries(securityHeaders(deployed, csp))) response.headers.set(k, v);
   if (env.NEXT_PUBLIC_APP_ENV !== "production") {
     response.headers.set("X-Robots-Tag", "noindex, nofollow");
   }

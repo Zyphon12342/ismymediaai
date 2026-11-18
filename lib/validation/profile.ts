@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/validation/zod";
 import { handle } from "./common";
 
 /** Keep in sync with private.handle_reserved() in the accounts migration. */

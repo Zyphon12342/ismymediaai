@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/validation/zod";
 
 export const mediaKind = z.enum(["movie", "tv_show", "book"]);
 export const voteValue = z.enum(["uses_ai", "no_ai", "unsure"]);

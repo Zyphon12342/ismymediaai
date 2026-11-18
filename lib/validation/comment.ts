@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/validation/zod";
 import { aiArea, evidenceUrl, uuid } from "./common";
 
 /** Control characters other than tab and newline. */

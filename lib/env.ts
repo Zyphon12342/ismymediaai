@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/validation/zod";
 
 /**
  * Environment settings, validated once. NEXT_PUBLIC_* values are inlined at

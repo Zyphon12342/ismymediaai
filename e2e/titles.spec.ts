@@ -115,7 +115,7 @@ test("comment with evidence, reply, edit, link and delete", async ({ page }) => 
   await comment.getByRole("button", { name: "Reply" }).click();
   await section.getByLabel("Your reply").fill("Thanks, that matches the credits.");
   await section.getByRole("button", { name: "Reply", exact: true }).last().click();
-  await expect(section.getByText("Thanks, that matches the credits.")).toBeVisible();
+  await expect(section.locator("p", { hasText: "Thanks, that matches the credits." })).toBeVisible();
 
   await comment.getByRole("button", { name: "Edit" }).first().click();
   const edit = section.getByLabel("Edit your comment");
