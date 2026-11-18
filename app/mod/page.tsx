@@ -31,7 +31,7 @@ export default async function ModQueuePage() {
         <h2 id="reports-heading" className="text-lg font-semibold">
           Open reports <span className="font-normal text-zinc-600">({items.length})</span>
         </h2>
-        {items.length === 0 ? <p className="text-sm text-zinc-600">Nothing to review.</p> : null}
+        {items.length === 0 ? <p className="text-sm text-zinc-600">Nothing to review. Comments, titles and profiles show up here once someone reports them.</p> : null}
         <ol className="space-y-4">
           {items.map((i) => (
             <li key={`${i.targetType}:${i.targetId}`} className="space-y-3 rounded-lg border border-zinc-200 p-4">
