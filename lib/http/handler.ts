@@ -4,7 +4,9 @@ import type { z } from "zod";
 import { publicEnv } from "@/lib/env";
 import { createClient, type DbClient } from "@/lib/supabase/server";
 import { HttpError, toErrorBody } from "./errors";
+import { serverEnv } from "@/lib/env.server";
 import { isSameOrigin } from "./origin";
+import { TURNSTILE_HEADER, verifyTurnstile } from "./turnstile";
 import { REQUEST_ID_HEADER, requestIdFrom } from "./request-id";
 
 /**
@@ -28,8 +30,14 @@ export interface HandlerPolicy<S extends z.ZodType | undefined> {
   auth: AuthLevel;
   /** Validates the JSON body of mutating requests. Unknown fields must be rejected by the schema (z.strictObject). */
   schema?: S;
-  // Rate limits (Upstash) and Turnstile checks plug in here in the
-  // "Auth pages, profiles, withHandler, rate limits" milestone.
+  /**
+   * Require a Turnstile token in the x-turnstile-token header, checked
+   * against this action name. A function decides per caller (e.g. only for
+   * someone's first few comments).
+   */
+  turnstile?: string | ((caller: Caller | null) => string | null | Promise<string | null>);
+  /** A fixed per-user limit from public.rate_limit_check(). Writes are also limited by database triggers. */
+  rateLimit?: "lookup";
 }
 
 export interface HandlerContext<S extends z.ZodType | undefined, P> {
@@ -63,6 +71,23 @@ export function withHandler<S extends z.ZodType | undefined = undefined, P = Rec
 
       const db = await createClient();
       const caller = policy.auth === "public" ? await optionalCaller(db) : await requireCaller(db, policy.auth);
+
+      if (policy.rateLimit && caller) {
+        const { error } = await db.rpc("rate_limit_check", { p_bucket: policy.rateLimit });
+        if (error) throw error.code === "RL429" ? new HttpError("rate_limited", "Too many requests. Try again later.") : error;
+      }
+
+      if (policy.turnstile) {
+        const action = typeof policy.turnstile === "string" ? policy.turnstile : await policy.turnstile(caller);
+        if (action) {
+          const ok = await verifyTurnstile(request.headers.get(TURNSTILE_HEADER), {
+            secret: serverEnv().TURNSTILE_SECRET_KEY,
+            ip: request.headers.get("cf-connecting-ip"),
+            expectedAction: action,
+          });
+          if (!ok) throw new HttpError("forbidden", "The bot check failed. Try it again.", { turnstile: true });
+        }
+      }
 
       let body: unknown = undefined;
       if (policy.schema && MUTATING.has(request.method)) {

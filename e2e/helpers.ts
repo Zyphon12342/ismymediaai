@@ -56,3 +56,46 @@ export async function signUp(page: Page, handle: string, password: string) {
   await expect(page.getByText("Check your email")).toBeVisible();
   return email;
 }
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "http://127.0.0.1:54321";
+// The Supabase CLI's fixed local default; only valid against 127.0.0.1.
+const SECRET_KEY = process.env.SUPABASE_SECRET_KEY ?? "sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz";
+
+/** A verified account at the given trust level, created directly through the local admin API. */
+export async function trustedUser(prefix: string, trustLevel = 1) {
+  const handle = uniqueHandle(prefix);
+  const email = `${handle}@example.test`;
+  const password = `pw-${crypto.randomUUID()}`;
+  const headers = { apikey: SECRET_KEY, Authorization: `Bearer ${SECRET_KEY}`, "Content-Type": "application/json" };
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ email, password, email_confirm: true, user_metadata: { handle } }),
+  });
+  if (!res.ok) throw new Error(`createUser ${res.status}`);
+  const { id } = (await res.json()) as { id: string };
+  const upd = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${id}`, {
+    method: "PATCH",
+    headers,
+    body: JSON.stringify({ trust_level: trustLevel }),
+  });
+  if (!upd.ok) throw new Error(`trust ${upd.status}`);
+  return { id, handle, email, password };
+}
+
+/** Delete titles from the fixtures so a test can add them again. */
+export async function deleteTitle(source: string, externalId: string) {
+  const headers = { apikey: SECRET_KEY, Authorization: `Bearer ${SECRET_KEY}` };
+  await fetch(`${SUPABASE_URL}/rest/v1/media?source=eq.${source}&external_id=eq.${encodeURIComponent(externalId)}`, {
+    method: "DELETE",
+    headers,
+  });
+}
+
+export async function signIn(page: Page, email: string, password: string, next = "/") {
+  await page.goto(`/sign-in?next=${encodeURIComponent(next)}`);
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Password").fill(password);
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.waitForURL((u) => !u.pathname.startsWith("/sign-in"));
+}

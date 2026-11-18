@@ -14,7 +14,9 @@
   "upload_source_maps": true,
   "workers_dev": false,
   "vars": {
-    "APP_ENV": "local"
+    "APP_ENV": "local",
+    // Local previews and CI use recorded catalogue responses, never TMDB or Open Library.
+    "CATALOG_FIXTURES": "1"
   },
   "env": {
     "staging": {

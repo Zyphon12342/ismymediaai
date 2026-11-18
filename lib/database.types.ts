@@ -255,7 +255,17 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "handle_available":
+            "browse_media":
+{ Args: { "p_genre"?: string,"p_kind"?: Database["public"]['Enums']["media_kind"],"p_limit"?: number,"p_offset"?: number,"p_q"?: string,"p_sort"?: string }; Returns: {
+              "counted_total": number,"cover_url": string,"created_at": string,"genres": (string)[],"id": string,"kind": Database["public"]['Enums']["media_kind"],"no_ai": number,"release_year": number,"slug": string,"title": string,"unsure": number,"uses_ai": number
+            }[]
+                           },
+"create_media":
+{ Args: { "p": Json }; Returns: {
+              "existing": boolean,"id": string,"slug": string,"status": Database["public"]['Enums']["content_status"]
+            }[]
+                           },
+"handle_available":
 { Args: { "p_handle": string }; Returns: boolean
                            },
 "my_profile":
@@ -267,6 +277,9 @@ isOneToOne: false
 { Args: { "p_user": string }; Returns: {
               "comment_count": number,"titles_added": number,"vote_count": number
             }[]
+                           },
+"rate_limit_check":
+{ Args: { "p_bucket": string }; Returns: undefined
                            },
 "refresh_trust_levels":
 { Args: Record<PropertyKey, never>; Returns: number

@@ -32,6 +32,8 @@ Security and triggers. `lib/database.types.ts` is generated from it.
 | Handle changes at most once per 30 days; no reserved or placeholder-shaped handles | `private.guard_profile_update` |
 | Username picked at sign-up is kept if free, else a `user_…` placeholder | `private.handle_new_user` |
 | Avatars only in the user's own folder, images up to 2 MB, at most 3 files | `avatars` bucket and storage policies |
+| New titles are created in one transaction with 1 to 3 genres and kind-fitting credits; catalogue ids are unique, so re-adding returns the existing title | `public.create_media()` |
+| Five new titles a day per user; 30 catalogue lookups a minute | `media_rate_limit` trigger, `public.rate_limit_check('lookup')` |
 | Rate limits (profile edits: 10 an hour); errors use SQLSTATE `RL429`, mapped to HTTP 429 | `private.rate_limit`, called from triggers |
 | Nightly trust promotion (verified, 72 h old) | `pg_cron` job `refresh-trust-levels`, 03:15 UTC |
 
