@@ -159,3 +159,8 @@
 body {
   font-family: var(--font-sans);
 }
+
+/* The site header is sticky; keep in-page jumps (#comments ...) from landing under it. */
+html {
+  scroll-padding-top: 8rem;
+}

@@ -18,3 +18,17 @@ test("home page has no WCAG 2.2 AA violations", async ({ page }) => {
   const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
   expect(results.violations).toEqual([]);
 });
+
+test("search is in the header and stays on screen while scrolling, on a phone too", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/privacy");
+  const box = page.getByRole("searchbox", { name: "Search titles" });
+  await expect(box).toBeInViewport();
+  await page.mouse.wheel(0, 2000);
+  await expect(box).toBeInViewport();
+  await box.fill("sample");
+  await box.press("Enter");
+  await expect(page).toHaveURL(/\/\?q=sample/);
+  await expect(page.getByText(/Results for/)).toBeVisible();
+  await expect(page.getByRole("searchbox", { name: "Search titles" })).toHaveValue("sample");
+});
