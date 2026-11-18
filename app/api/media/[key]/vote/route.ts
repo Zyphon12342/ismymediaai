@@ -2,6 +2,8 @@ import { HttpError, fromPostgresError } from "@/lib/http/errors";
 import { withHandler } from "@/lib/http/handler";
 import { uuid } from "@/lib/validation/common";
 import { VoteInput } from "@/lib/validation/vote";
+import { track } from "@/lib/analytics/server";
+import { getMyVote } from "@/lib/data/media";
 
 function mediaId(key: string): string {
   const id = uuid.safeParse(key);
@@ -20,15 +22,23 @@ function voteError(code: string | undefined): HttpError {
 export const PUT = withHandler<typeof VoteInput, { key: string }>(
   { auth: "verified", schema: VoteInput },
   async ({ db, params, body, caller }) => {
-    const { error } = await db.rpc("cast_vote", { p_media: mediaId(params.key), p_value: body.value });
+    const id = mediaId(params.key);
+    const before = await getMyVote(db, id, caller!.id);
+    const { error } = await db.rpc("cast_vote", { p_media: id, p_value: body.value });
     if (error) throw voteError(error.code);
-    return { value: body.value, counted: caller!.trustLevel >= 1 };
+    const counted = caller!.trustLevel >= 1;
+    if (before !== body.value) {
+      track(before ? "vote_changed" : "vote_cast", caller!.id, { media_id: id, value: body.value, previous: before, counted });
+    }
+    return { value: body.value, counted };
   },
 );
 
 /** Withdraw your vote. */
 export const DELETE = withHandler<undefined, { key: string }>({ auth: "verified" }, async ({ db, params, caller }) => {
-  const { error } = await db.from("votes").delete().eq("media_id", mediaId(params.key)).eq("user_id", caller!.id);
+  const id = mediaId(params.key);
+  const { data, error } = await db.from("votes").delete().eq("media_id", id).eq("user_id", caller!.id).select("value");
   if (error) throw voteError(error.code);
+  if (data?.length) track("vote_removed", caller!.id, { media_id: id, value: data[0]!.value });
   return new Response(null, { status: 204 });
 });

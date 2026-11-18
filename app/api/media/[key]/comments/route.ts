@@ -8,6 +8,7 @@ import { needsCommentTurnstile, toCommentRow } from "@/lib/services/comments";
 import { createClient } from "@/lib/supabase/server";
 import { uuid } from "@/lib/validation/common";
 import { CommentInput, CommentListQuery } from "@/lib/validation/comment";
+import { track } from "@/lib/analytics/server";
 
 function mediaId(key: string): string {
   const id = uuid.safeParse(key);
@@ -29,13 +30,19 @@ export const POST = withHandler<typeof CommentInput, { key: string }>(
     schema: CommentInput,
     turnstile: async () => (needsCommentTurnstile(await myCommentCount(await createClient())) ? "comment" : null),
   },
-  async ({ db, params, body }) => {
+  async ({ db, params, body, caller }) => {
     const { data, error } = await db
       .from("comments")
       .insert({ media_id: mediaId(params.key), parent_id: body.parentId ?? null, ...toCommentRow(body), body: body.body })
       .select("id, created_at")
       .single();
     if (error) throw commentError(error.code, error.message);
+    track("comment_posted", caller!.id, {
+      media_id: params.key,
+      has_evidence: Boolean(body.evidenceUrl),
+      ai_areas: body.aiAreas ?? [],
+      is_reply: Boolean(body.parentId),
+    });
     return NextResponse.json({ id: data.id, createdAt: data.created_at }, { status: 201 });
   },
 );

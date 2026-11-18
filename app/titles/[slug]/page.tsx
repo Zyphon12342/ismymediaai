@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { cache } from "react";
 import { CommentSection } from "@/components/comments/comment-section";
+import { TrackEvent } from "@/components/analytics/analytics";
 import { JsonLd } from "@/components/json-ld";
 import { Cover } from "@/components/media/cover";
 import { ReportButton } from "@/components/moderation/report-button";
@@ -76,6 +77,12 @@ export default async function TitlePage({ params, searchParams }: PageProps<"/ti
 
   return (
     <article className="space-y-8">
+      <TrackEvent
+        event="media_viewed"
+        props={{ media_id: m.id, kind: m.kind }}
+        posthogKey={publicEnv().NEXT_PUBLIC_POSTHOG_KEY}
+        posthogHost={publicEnv().NEXT_PUBLIC_POSTHOG_HOST}
+      />
       {m.status !== "published" ? (
         <p role="status" className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
           {m.status === "pending" ? "This title is waiting for a moderator to review it. Only you can see it for now." : "This title is hidden."}

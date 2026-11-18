@@ -38,6 +38,9 @@ Open each environment (**Settings → Environments → staging / production**) a
 | --- | --- | --- |
 | `SUPABASE_SECRET_KEY` | secret | Project → Project Settings → API Keys → **Secret keys** (`sb_secret_…`). Create one named `github-actions`. |
 | `SUPABASE_PUBLISHABLE_KEY` | variable | Project → Project Settings → API Keys → **Publishable key** (`sb_publishable_…`). Public by design. |
+| `POSTHOG_KEY` | variable (optional) | posthog.com → create one project per environment (e.g. "isMyMediaAI staging" and "isMyMediaAI") → Project settings → **Project API key** (`phc_…`). Public by design. Unset: no analytics. |
+| `POSTHOG_HOST` | variable (optional) | `https://us.i.posthog.com` for US cloud (the default) or `https://eu.i.posthog.com` for EU cloud. |
+| `CF_BEACON_TOKEN` | variable (optional) | Cloudflare dashboard → Analytics & Logs → **Web Analytics** → Add a site → `ismymediaai.com` (or `staging.ismymediaai.com`) → choose **manual setup** → copy the `token` value from the snippet. |
 
 Use the staging project (`raytxskehcrnbvyeebbf`) for `staging` and the
 production project (`ifcwdqxukmauazzrmknf`) for `production`. The project refs

@@ -28,6 +28,11 @@ const publicSchema = z.object({
       .map((p) => p.trim())
       .filter((p): p is OAuthProvider => (OAUTH_PROVIDERS as readonly string[]).includes(p)),
   ),
+  /** PostHog project key. Unset: no analytics at all (local dev, CI). */
+  NEXT_PUBLIC_POSTHOG_KEY: emptyAsUndefined(z.string().min(1).optional()),
+  NEXT_PUBLIC_POSTHOG_HOST: emptyAsUndefined(z.url().default("https://us.i.posthog.com")),
+  /** Cloudflare Web Analytics token. Unset: no beacon. */
+  NEXT_PUBLIC_CF_BEACON_TOKEN: emptyAsUndefined(z.string().min(1).optional()),
 });
 
 export type PublicEnv = z.infer<typeof publicSchema>;
@@ -43,6 +48,9 @@ export function publicEnv(): PublicEnv {
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
     NEXT_PUBLIC_AUTH_PROVIDERS: process.env.NEXT_PUBLIC_AUTH_PROVIDERS,
+    NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
+    NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+    NEXT_PUBLIC_CF_BEACON_TOKEN: process.env.NEXT_PUBLIC_CF_BEACON_TOKEN,
   });
   return cached;
 }

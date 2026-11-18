@@ -4,6 +4,7 @@ import { NEXT_COOKIE } from "@/components/auth/next-cookie";
 import { browserOrigin } from "@/lib/http/origin";
 import { safeNextPath } from "@/lib/services/account";
 import { createClient } from "@/lib/supabase/server";
+import { track } from "@/lib/analytics/server";
 
 const OTP_TYPES = new Set<EmailOtpType>(["signup", "email", "recovery", "email_change", "invite", "magiclink"]);
 
@@ -28,8 +29,12 @@ export async function GET(request: NextRequest) {
     const { error } = await db.auth.exchangeCodeForSession(code);
     failed = error ? (error.code ?? "exchange_failed") : null;
   } else if (tokenHash && type && OTP_TYPES.has(type)) {
-    const { error } = await db.auth.verifyOtp({ type, token_hash: tokenHash });
+    const { data, error } = await db.auth.verifyOtp({ type, token_hash: tokenHash });
     failed = error ? (error.code ?? "verify_failed") : null;
+    if (!error && data.user && (type === "signup" || type === "email")) {
+      track("email_verified", data.user.id);
+      track("signup_completed", data.user.id, { method: "email" });
+    }
   } else if (url.searchParams.get("error_code")) {
     failed = url.searchParams.get("error_code")!.slice(0, 60);
   }

@@ -8,6 +8,7 @@ import { Alert, Button, Field, inputClass } from "@/components/ui";
 import type { LookupDetail, LookupResult, MediaKind } from "@/lib/catalog/types";
 import { KIND_LABELS, titlePath } from "@/lib/services/labels";
 import { ROLES_BY_KIND, roleLabel } from "@/lib/services/media";
+import { trackBrowser } from "@/components/analytics/analytics";
 
 interface Genre {
   slug: string;
@@ -96,6 +97,7 @@ export function AddTitleForm({ genres, siteKey }: { genres: Genre[]; siteKey?: s
   }
 
   async function submit(body: unknown) {
+    trackBrowser("entry_create_started", {});
     if (picked.length < 1) return setError("Pick at least 1 genre.");
     if (siteKey && !token) return setError("Complete the bot check first.");
     setBusy(true);

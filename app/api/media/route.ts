@@ -5,6 +5,7 @@ import { withHandler } from "@/lib/http/handler";
 import { pickParams } from "@/lib/http/query";
 import { payloadFromCatalogue, payloadFromManual } from "@/lib/services/media";
 import { BrowseQuery, CreateMediaInput } from "@/lib/validation/media";
+import { track } from "@/lib/analytics/server";
 
 /** Browse and search published titles. */
 export const GET = withHandler({ auth: "public" }, async ({ db, request }) => {
@@ -42,6 +43,7 @@ export const POST = withHandler(
       throw fromPostgresError(error.code);
     }
     const status = data.existing ? 200 : 201;
+    if (!data.existing) track("entry_created", caller!.id, { kind: payload.kind, source: payload.source, status: data.status });
     return Response.json({ slug: data.slug, status: data.status, existing: data.existing }, { status });
   },
 );

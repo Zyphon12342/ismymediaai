@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/browser";
 import { SignUpInput } from "@/lib/validation/profile";
 import { fieldErrors } from "./field-errors";
 import { rememberNext } from "./next-cookie";
+import { trackBrowser } from "@/components/analytics/analytics";
 
 export function SignUpForm({ siteKey }: { siteKey?: string }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -21,6 +22,7 @@ export function SignUpForm({ siteKey }: { siteKey?: string }) {
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setFormError(null);
+    trackBrowser("signup_started", { method: "email" });
     const form = new FormData(e.currentTarget);
     const parsed = SignUpInput.safeParse({
       email: String(form.get("email") ?? "").trim(),

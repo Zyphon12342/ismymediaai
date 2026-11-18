@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { AnalyticsHooks } from "@/components/analytics/analytics-hooks";
 import { SiteHeader } from "@/components/site-header";
 import { publicEnv } from "@/lib/env";
 import "./globals.css";
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             </p>
           </div>
         </footer>
+        <AnalyticsHooks />
       </body>
     </html>
   );
