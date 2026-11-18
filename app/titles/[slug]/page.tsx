@@ -2,21 +2,34 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { cache } from "react";
+import { CommentSection } from "@/components/comments/comment-section";
 import { Cover } from "@/components/media/cover";
 import { VoteBar } from "@/components/media/vote-bar";
 import { VoteButtons } from "@/components/media/vote-buttons";
+import { listComments, myCommentCount } from "@/lib/data/comments";
 import { getMediaBySlug, getMyVote, slugById } from "@/lib/data/media";
 import { getMyProfile } from "@/lib/data/profiles";
+import { publicEnv } from "@/lib/env";
+import { needsCommentTurnstile } from "@/lib/services/comments";
 import { KIND_LABELS, titlePath } from "@/lib/services/labels";
 import { groupCredits, roleLabel } from "@/lib/services/media";
 import { sourceUrl, verdictSentence } from "@/lib/services/verdict";
 import { createClient } from "@/lib/supabase/server";
+import { CommentListQuery } from "@/lib/validation/comment";
 
 const load = cache(async (slug: string) => {
   if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug) || slug.length > 120) return null;
   const db = await createClient();
   return getMediaBySlug(db, slug);
 });
+
+function one(v: string | string[] | undefined): string | undefined {
+  return typeof v === "string" ? v : undefined;
+}
+
+function isBanned(until: string | null): boolean {
+  return until !== null && new Date(until) > new Date();
+}
 
 function question(title: string, year: number | null) {
   return `Is ${title}${year ? ` (${year})` : ""} AI-generated?`;
@@ -35,7 +48,7 @@ export async function generateMetadata({ params }: PageProps<"/titles/[slug]">):
   };
 }
 
-export default async function TitlePage({ params }: PageProps<"/titles/[slug]">) {
+export default async function TitlePage({ params, searchParams }: PageProps<"/titles/[slug]">) {
   const m = await load((await params).slug);
   if (!m) notFound();
   if (m.mergedInto) {
@@ -48,6 +61,11 @@ export default async function TitlePage({ params }: PageProps<"/titles/[slug]">)
   const voteState = !me ? "signed_out" : !me.emailVerified ? "unverified" : me.trustLevel < 1 ? "new" : "ok";
   const src = sourceUrl(m.source, m.externalId);
   const groups = groupCredits(m.credits);
+  const sp = await searchParams;
+  const cq = CommentListQuery.parse({ sort: one(sp.sort), cursor: one(sp.cursor)?.slice(0, 10) });
+  const comments = m.status === "published" ? await listComments(db, m.id, cq) : null;
+  const commentCount = me?.emailVerified ? await myCommentCount(db) : 0;
+  const isMod = me?.role === "moderator" || me?.role === "admin";
 
   return (
     <article className="space-y-8">
@@ -118,6 +136,22 @@ export default async function TitlePage({ params }: PageProps<"/titles/[slug]">)
             ))}
           </dl>
         </section>
+      ) : null}
+
+      {comments ? (
+        <CommentSection
+          mediaId={m.id}
+          slug={m.slug}
+          threads={comments.items}
+          total={comments.total}
+          sort={cq.sort}
+          nextCursor={comments.nextCursor}
+          viewer={me ? { id: me.id, verified: me.emailVerified && !isBanned(me.bannedUntil), moderator: isMod } : null}
+          open={!m.commentsLocked}
+          locked={m.commentsLocked}
+          siteKey={publicEnv().NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+          needsTurnstile={needsCommentTurnstile(commentCount)}
+        />
       ) : null}
 
       <p className="text-xs text-zinc-500">

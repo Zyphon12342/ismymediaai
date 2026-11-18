@@ -94,6 +94,46 @@ test("vote on a title, change it, and see it on your profile", async ({ page }) 
   await expect(page.getByRole("link", { name: /Example Street/ })).toBeVisible();
 });
 
+test("comment with evidence, reply, edit, link and delete", async ({ page }) => {
+  const u = await trustedUser("commenter");
+  await signIn(page, u.email, u.password, "/titles/example-street-2030");
+  const section = page.locator("#comments");
+  await section.getByLabel("Your comment").fill("The opening titles were made with an image model. Source: https://news.example/street.");
+  await section.getByLabel(/Evidence link/).fill("https://News.Example/street-credits");
+  await section.getByRole("checkbox", { name: "Visuals" }).check();
+  await section.getByRole("button", { name: "Post comment" }).click();
+
+  const comment = section.locator("article").filter({ hasText: "opening titles" });
+  await expect(comment).toBeVisible();
+  await expect(comment.getByRole("link", { name: "https://news.example/street", exact: true })).toHaveAttribute("rel", /nofollow ugc/);
+  await expect(comment.getByRole("link", { name: "https://news.example/street-credits" })).toHaveAttribute("rel", /nofollow ugc/);
+  await expect(comment.getByRole("list", { name: "Where AI was used" })).toHaveText("Visuals");
+
+  await comment.getByRole("button", { name: "Reply" }).click();
+  await section.getByLabel("Your reply").fill("Thanks, that matches the credits.");
+  await section.getByRole("button", { name: "Reply", exact: true }).last().click();
+  await expect(section.getByText("Thanks, that matches the credits.")).toBeVisible();
+
+  await comment.getByRole("button", { name: "Edit" }).first().click();
+  const edit = section.getByLabel("Edit your comment");
+  await edit.fill("The opening titles were made with an image model.");
+  await section.getByRole("button", { name: "Save" }).click();
+  await expect(comment.getByText("(edited)")).toBeVisible();
+
+  // The date links to the comment's own anchor.
+  const permalink = comment.locator("header a[title='Link to this comment']");
+  const href = await permalink.getAttribute("href");
+  expect(href).toMatch(/^\/titles\/example-street-2030#comment-[0-9a-f-]{36}$/);
+  await page.goto(href!);
+  await expect(page.locator(href!.slice(href!.indexOf("#")))).toBeVisible();
+  expect((await new AxeBuilder({ page }).withTags(WCAG).analyze()).violations).toEqual([]);
+
+  const reply = section.locator("article").filter({ hasText: "Thanks, that matches" });
+  await reply.getByRole("button", { name: "Delete" }).click();
+  await reply.getByRole("button", { name: "Yes, delete" }).click();
+  await expect(section.getByText("Thanks, that matches the credits.")).toHaveCount(0);
+});
+
 test("signed-out visitors are asked to sign in to vote", async ({ page }) => {
   await page.goto("/");
   const first = page.locator("main ul li a").first();

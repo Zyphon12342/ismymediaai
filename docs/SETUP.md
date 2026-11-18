@@ -124,6 +124,17 @@ For production use `https://ismymediaai.com` and `ifcwdqxukmauazzrmknf` in the U
   `www.` (which the app redirects to the apex).
 - SSL/TLS → Edge Certificates: **Always Use HTTPS** on.
 
+## 7. Comment word filter and blocked link domains (optional)
+
+Both lists start empty. To add entries, in the Supabase dashboard for each project open **SQL Editor** → **New query**, paste and edit, then click **Run**:
+
+```sql
+insert into private.blocked_terms (term) values ('exampleslur');           -- lower case, whole words
+insert into private.blocked_domains (domain) values ('malware.example');  -- also blocks its subdomains
+```
+
+To remove one: `delete from private.blocked_terms where term = 'exampleslur';`
+
 ## How a change reaches production
 
 1. Open a PR. CI must be green.

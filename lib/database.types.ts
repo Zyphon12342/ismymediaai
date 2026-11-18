@@ -271,6 +271,9 @@ isOneToOne: false
 "handle_available":
 { Args: { "p_handle": string }; Returns: boolean
                            },
+"my_comment_count":
+{ Args: Record<PropertyKey, never>; Returns: number
+                           },
 "my_profile":
 { Args: Record<PropertyKey, never>; Returns: {
               "avatar_path": string,"banned_until": string,"created_at": string,"display_name": string,"email_verified": boolean,"handle": string,"handle_changed_at": string,"id": string,"role": Database["public"]['Enums']["user_role"],"show_votes": boolean,"trust_level": number

@@ -27,6 +27,8 @@ Security and triggers. `lib/database.types.ts` is generated from it.
 | Kind-specific credit roles (no director on a book) | `private.check_credit` |
 | 1 to 3 genres per title that fit its kind (max enforced here, min by the service) | `private.check_media_genre` |
 | One level of replies, 15-minute edits, soft delete clears text | comment triggers |
+| 10 new comments an hour and 20 edits or deletes an hour per user; no edits on a locked title | `comments_write_checks` trigger |
+| Blocked words (whole word, any case) and blocked evidence-link domains, both admin-managed lists | `private.blocked_terms`, `private.blocked_domains` |
 | One open report per reporter per target | partial unique index |
 | `mod_actions` is append-only, even for admins and the owner | `private.forbid_change` triggers |
 | Handle changes at most once per 30 days; no reserved or placeholder-shaped handles | `private.guard_profile_update` |

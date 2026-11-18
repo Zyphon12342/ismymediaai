@@ -12,6 +12,7 @@ import {
   listProfileVotes,
 } from "@/lib/data/profiles";
 import { formatDate, memberSince } from "@/lib/services/account";
+import { commentPermalink } from "@/lib/services/comments";
 import { KIND_LABELS, VOTE_LABELS, titlePath } from "@/lib/services/labels";
 import { createClient } from "@/lib/supabase/server";
 import { handle as handleSchema } from "@/lib/validation/common";
@@ -116,7 +117,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps<"/
             {comments.items.map((c) => (
               <li key={c.id} className="space-y-1 py-4">
                 <p className="text-sm text-zinc-600">
-                  On <Link href={titlePath(c.media.slug)} className="font-medium text-zinc-900 underline">{c.media.title}</Link>{" "}
+                  On <Link href={commentPermalink(c.media.slug, c.id)} className="font-medium text-zinc-900 underline">{c.media.title}</Link>{" "}
                   <span className="text-zinc-500">({KIND_LABELS[c.media.kind]}) · {formatDate(new Date(c.createdAt))}</span>
                 </p>
                 <p className="whitespace-pre-line break-words text-sm text-zinc-900">{c.body}</p>
