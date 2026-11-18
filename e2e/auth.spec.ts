@@ -63,7 +63,7 @@ test("sign up, verify by email, edit profile, show votes, sign out, sign back in
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(new RegExp(`/u/${handle}$`));
+  await expect(page).toHaveURL(new URL(`/u/${handle}`, baseURL).toString());
   await expect(page.getByRole("link", { name: "Edit profile" })).toBeVisible();
 });
 

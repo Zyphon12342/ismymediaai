@@ -2,6 +2,22 @@ import { expect, type Page } from "@playwright/test";
 
 const MAILPIT = process.env.MAILPIT_URL ?? "http://127.0.0.1:54324";
 
+/** The first /auth/callback URL in a plain-text email body. */
+function callbackLink(text: string): string | null {
+  for (const word of text.split(/\s/)) {
+    const start = word.indexOf("http");
+    if (start === -1) continue;
+    const candidate = word.slice(start).replace(/[)>\]]+$/, "");
+    try {
+      const url = new URL(candidate);
+      if (url.pathname === "/auth/callback") return url.toString();
+    } catch {
+      // not a URL
+    }
+  }
+  return null;
+}
+
 /** Wait for the newest email to `to` in the local mail catcher and return its first auth link. */
 export async function authLinkFor(to: string, baseURL: string): Promise<string> {
   let link: string | null = null;
@@ -12,10 +28,9 @@ export async function authLinkFor(to: string, baseURL: string): Promise<string> 
         if (!res.ok) return null;
         const { messages } = (await res.json()) as { messages: { ID: string }[] };
         const id = messages[0]?.ID;
-        if (!id) return null;
-        const msg = (await (await fetch(`${MAILPIT}/api/v1/message/${id}`)).json()) as { HTML: string };
-        const href = /href="([^"]*\/auth\/callback[^"]*)"/.exec(msg.HTML)?.[1] ?? null;
-        link = href ? href.replace(/&amp;/g, "&") : null;
+        if (!id || !/^[A-Za-z0-9]{1,64}$/.test(id)) return null;
+        const msg = (await (await fetch(`${MAILPIT}/api/v1/message/${encodeURIComponent(id)}`)).json()) as { Text: string };
+        link = callbackLink(msg.Text);
         return link;
       },
       { timeout: 20_000 },
