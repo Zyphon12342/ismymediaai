@@ -8,6 +8,8 @@ export const ROLES_BY_KIND: Record<MediaKind, readonly string[]> = {
   movie: ["actor", "director", "writer", "composer", "studio"],
   tv_show: ["actor", "director", "creator", "writer", "showrunner", "composer", "studio", "network"],
   book: ["author", "illustrator", "translator", "publisher"],
+  anime: ["actor", "director", "creator", "writer", "composer", "studio"],
+  manga: ["author", "illustrator", "translator", "publisher"],
 };
 
 export function roleAllowed(kind: MediaKind, role: string): boolean {
@@ -16,7 +18,7 @@ export function roleAllowed(kind: MediaKind, role: string): boolean {
 
 export interface CreateMediaPayload {
   kind: MediaKind;
-  source: "tmdb" | "openlibrary" | "manual";
+  source: "tmdb" | "openlibrary" | "anilist" | "manual";
   external_id: string | null;
   slug: string;
   title: string;
@@ -114,4 +116,44 @@ export const ROLE_LABELS: Record<string, [string, string]> = {
 export function roleLabel(role: string, count: number): string {
   const l = ROLE_LABELS[role];
   return l ? l[count === 1 ? 0 : 1] : role;
+}
+
+/**
+ * Kinds where the same work may already be listed from another catalogue:
+ * most anime is also on TMDB as a TV show or film, and some manga is on
+ * Open Library as a book.
+ */
+export const TWIN_KINDS: Record<MediaKind, MediaKind[]> = {
+  movie: ["anime"],
+  tv_show: ["anime"],
+  book: ["manga"],
+  anime: ["tv_show", "movie"],
+  manga: ["book"],
+};
+
+export interface TwinCandidate {
+  slug: string;
+  title: string;
+  originalTitle?: string | null;
+  kind: MediaKind;
+  year: number | null;
+}
+
+/**
+ * The existing title that is probably the same work as a lookup result: one
+ * of its names matches (case-insensitive) and the years are at most a year
+ * apart when both are known.
+ */
+export function findTwin<T extends TwinCandidate>(
+  result: { title: string; year: number | null; altTitles?: string[] },
+  candidates: T[],
+): T | null {
+  const names = new Set([result.title, ...(result.altTitles ?? [])].map((n) => n.trim().toLowerCase()));
+  return (
+    candidates.find(
+      (c) =>
+        (names.has(c.title.trim().toLowerCase()) || (!!c.originalTitle && names.has(c.originalTitle.trim().toLowerCase()))) &&
+        (result.year === null || c.year === null || Math.abs(result.year - c.year) <= 1),
+    ) ?? null
+  );
 }

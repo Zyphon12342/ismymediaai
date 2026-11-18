@@ -12,7 +12,7 @@ export default function CorrectionPolicyPage() {
     <article className="max-w-2xl space-y-6 text-sm leading-6 text-zinc-800">
       <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">Correction policy</h1>
       <p>
-        isMyMediaAI shows what its members think about whether a film, show or book used generative AI. We want that to be
+        isMyMediaAI shows what its members think about whether a film, show, book, anime or manga used generative AI. We want that to be
         fair to the people who made it. If something here is wrong, use the <strong>Request a correction</strong> link at the
         bottom of the title&apos;s page. You do not need an account.
       </p>

@@ -178,13 +178,30 @@ export async function slugById(db: DbClient, id: string): Promise<string | null>
 /** Which catalogue ids already have a visible title here, by "source:id". */
 export async function existingCatalogueSlugs(
   db: DbClient,
-  source: "tmdb" | "openlibrary",
+  source: "tmdb" | "openlibrary" | "anilist",
   externalIds: string[],
 ): Promise<Map<string, string>> {
   if (externalIds.length === 0) return new Map();
   const { data, error } = await db.from("media").select("slug, external_id").eq("source", source).in("external_id", externalIds);
   if (error) throw error;
   return new Map((data ?? []).flatMap((r) => (r.external_id ? [[r.external_id, r.slug] as [string, string]] : [])));
+}
+
+export interface SimilarTitle {
+  slug: string;
+  title: string;
+  originalTitle: string | null;
+  kind: MediaKind;
+  year: number | null;
+}
+
+/** Published titles of these kinds named any of `titles` (case-insensitive). */
+export async function similarTitles(db: DbClient, kinds: MediaKind[], titles: string[]): Promise<SimilarTitle[]> {
+  const names = [...new Set(titles.map((t) => t.trim()).filter(Boolean))].slice(0, 100);
+  if (!kinds.length || !names.length) return [];
+  const { data, error } = await db.rpc("similar_titles", { p_kinds: kinds, p_titles: names });
+  if (error) throw error;
+  return (data ?? []).map((r) => ({ slug: r.slug, title: r.title, originalTitle: r.original_title, kind: r.kind, year: r.release_year }));
 }
 
 /** The signed-in user's own vote on a title, if any. */

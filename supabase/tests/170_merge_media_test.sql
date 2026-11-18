@@ -35,7 +35,7 @@ select throws_ok(
   '22023', 'a title cannot be merged into itself', 'a title cannot merge into itself');
 select throws_ok(
   $$ select public.merge_media((select id from public.media where slug = 'dup-gone'), (select id from public.media where slug = 'dup-book')) $$,
-  '22023', 'both titles must be the same kind', 'a film cannot merge into a book');
+  '22023', 'both titles must be the same kind, or anime with a TV show or film, or manga with a book', 'a film cannot merge into a book');
 select lives_ok(
   $$ select public.merge_media((select id from public.media where slug = 'dup-gone'), (select id from public.media where slug = 'dup-keep'), 'Same film') $$,
   'a moderator merges a duplicate');

@@ -36,6 +36,7 @@ export function contentSecurityPolicy({ nonce, supabaseUrl, dev = false, deploye
       supabase.origin,
       "https://image.tmdb.org",
       "https://covers.openlibrary.org",
+      "https://s4.anilist.co",
       // Open Library covers redirect to the Internet Archive.
       "https://archive.org",
       "https://*.archive.org",

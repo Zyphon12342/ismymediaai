@@ -53,7 +53,7 @@ export function moderationErrorMessage(pgCode: string | undefined, pgMessage: st
   if (msg.includes("merged into itself")) return "Pick a different title to keep.";
   if (msg.includes("already merged")) return "That title was already merged.";
   if (msg.includes("must be published and not merged")) return "The title to keep must be published and not merged itself.";
-  if (msg.includes("same kind")) return "Both titles must be the same kind (film, show or book).";
+  if (msg.includes("same kind")) return "Both titles must be the same kind. Anime can also merge with a TV show or film, and manga with a book.";
   if (pgCode === "22023") return "That action doesn't fit this item.";
   if (pgCode === "42501") return "Moderators only.";
   return null;

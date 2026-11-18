@@ -1,6 +1,6 @@
 /**
  * Recorded-style catalogue responses for local previews and CI, so tests
- * never call TMDB or Open Library. Titles and people here are fictional.
+ * never call TMDB, Open Library or AniList. Titles and people here are fictional.
  */
 import type { FetchLike } from "./types";
 
@@ -52,6 +52,36 @@ const books = [
   },
 ];
 
+// AniList entries. "Example Street" is also a TMDB show above, to exercise the "may already be here" hint.
+const anilist = [
+  {
+    id: 920001, type: "ANIME", isAdult: false, title: { romaji: "Hoshi no Gakuen", english: "Placeholder Academy", native: "星の学園" },
+    synonyms: [], startDate: { year: 2034 }, coverImage: { extraLarge: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx920001.jpg", large: null },
+    description: "Students at an academy that only exists in tests.<br><br>(Source: Fixture)", genres: ["Comedy", "Slice of Life", "Ecchi"],
+    studios: { nodes: [{ name: "Studio Fixture" }], edges: [{ isMain: true, node: { id: 7201, name: "Studio Fixture" } }, { isMain: false, node: { id: 7202, name: "Helper Works" } }] },
+    staff: { edges: [
+      { role: "Director", node: { id: 8201, name: { full: "Kei Director" } } },
+      { role: "Original Creator", node: { id: 8202, name: { full: "Rin Creator" } } },
+      { role: "Music", node: { id: 8203, name: { full: "Sora Composer" } } },
+      { role: "Key Animation (ep 3)", node: { id: 8204, name: { full: "Tomo Animator" } } },
+    ] },
+    characters: { edges: [{ node: { name: { full: "Aoi Student" } }, voiceActors: [{ id: 8205, name: { full: "Yui Voice" } }] }] },
+  },
+  {
+    id: 920002, type: "ANIME", isAdult: false, title: { romaji: "Rei no Michi", english: "Example Street", native: "例の通り" },
+    synonyms: [], startDate: { year: 2030 }, coverImage: { extraLarge: null, large: null },
+    description: null, genres: ["Drama"], studios: { nodes: [], edges: [] }, staff: { edges: [] }, characters: { edges: [] },
+  },
+  {
+    id: 930001, type: "MANGA", isAdult: false, title: { romaji: "Fikusucha Monogatari", english: null, native: "フィクスチャ物語" },
+    synonyms: ["Fixture Chronicle"], startDate: { year: 2031 }, coverImage: { extraLarge: "https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx930001.jpg", large: null },
+    description: "A manga drawn entirely in test fixtures.", genres: ["Mystery", "Psychological"],
+    studios: { nodes: [], edges: [] },
+    staff: { edges: [{ role: "Story & Art", node: { id: 8301, name: { full: "Mei Mangaka" } } }, { role: "Translator (English)", node: { id: 8302, name: { full: "Noa Translator" } } }] },
+    characters: { edges: [] },
+  },
+];
+
 function match(q: string | null, title: string): boolean {
   const words = (q ?? "").toLowerCase().split(/\W+/).filter(Boolean);
   return words.every((w) => title.toLowerCase().includes(w));
@@ -60,7 +90,7 @@ function match(q: string | null, title: string): boolean {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
-export const fixtureFetch: FetchLike = async (input) => {
+export const fixtureFetch: FetchLike = async (input, init) => {
   const url = new URL(input);
   const q = url.searchParams.get("query") ?? url.searchParams.get("q");
   let m: RegExpExecArray | null;
@@ -94,6 +124,17 @@ export const fixtureFetch: FetchLike = async (input) => {
       const hit = books.find((b) => b.key === `/works/${m![1]}`);
       return hit ? json({ key: hit.key, title: hit.title, ...hit.work }) : json({ error: "notfound" }, 404);
     }
+  }
+  if (url.hostname === "graphql.anilist.co" && init?.method === "POST") {
+    const { query, variables: v } = JSON.parse(String(init.body)) as { query: string; variables: Record<string, unknown> };
+    const ofType = anilist.filter((a) => a.type === v.type);
+    if (/\bMedia\(id:/.test(query)) {
+      const hit = ofType.find((a) => a.id === v.id);
+      return hit ? json({ data: { Media: hit } }) : json({ data: { Media: null }, errors: [{ message: "Not Found.", status: 404 }] }, 404);
+    }
+    const q = typeof v.q === "string" ? v.q : null;
+    const media = q ? ofType.filter((a) => [a.title.english, a.title.romaji, ...a.synonyms].some((t) => t && match(q, t))) : ofType;
+    return json({ data: { Page: { media } } });
   }
   return json({ error: "no fixture" }, 404);
 };

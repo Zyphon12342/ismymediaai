@@ -23,6 +23,8 @@ const KINDS = [
   { value: "movie", label: KIND_PLURALS.movie },
   { value: "tv_show", label: KIND_PLURALS.tv_show },
   { value: "book", label: KIND_PLURALS.book },
+  { value: "anime", label: KIND_PLURALS.anime },
+  { value: "manga", label: KIND_PLURALS.manga },
 ] as const;
 
 export default async function Home({ searchParams }: PageProps<"/">) {
@@ -57,7 +59,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
       <section className="space-y-3">
         <h1 className="text-3xl font-semibold tracking-tight">Did this use gen AI?</h1>
         <p className="max-w-prose text-zinc-600">
-          Community votes, backed by cited evidence, on whether a movie, TV show or book used generative AI.
+          Community votes, backed by cited evidence, on whether a movie, TV show, book, anime or manga used generative AI.
         </p>
       </section>
 
@@ -67,7 +69,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
             <h2 id="trending-heading" className="text-xl font-semibold tracking-tight">
               New and trending
             </h2>
-            <p className="text-sm text-zinc-600">In cinemas, on TV and on reading lists right now. Most have no verdict yet, so your vote counts.</p>
+            <p className="text-sm text-zinc-600">In cinemas, on TV, on reading lists and in anime and manga right now. Most have no verdict yet, so your vote counts.</p>
           </div>
           <ul className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
             {trending.map((m) => (

@@ -14,7 +14,7 @@ select tables_are('public', array[
   'correction_requests'
 ], 'public schema has exactly the expected tables');
 
-select is((select count(*)::int from public.genres), 20, 'the curated genre list is seeded');
+select is((select count(*)::int from public.genres), 24, 'the curated genre list is seeded');
 
 select ok(
   not has_function_privilege('anon', 'public.refresh_trust_levels()', 'execute')

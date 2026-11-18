@@ -170,7 +170,7 @@ After that, promote other moderators from SQL the same way with `role = 'moderat
 
 GitHub → **Actions → Seed staging catalogue → Run workflow** → keep the defaults (60 movies, 40 TV shows, 40 books) → **Run workflow**. It takes a few minutes. Titles already there are skipped, so you can run it again at any time. There is no production version on purpose: production fills up from members.
 
-The same workflow runs every day at 06:17 UTC in **trending** mode. It refreshes the home page's **New and trending** row from TMDB's now-playing and weekly trending lists and Open Library's weekly trending books, adding any new titles. If a source is down and fewer than 8 titles come back, it keeps the previous list. Until the first refresh, the row shows the most recent releases. It uses free APIs and free GitHub Actions minutes on this public repository.
+The same workflow runs every day at 06:17 UTC in **trending** mode. It refreshes the home page's **New and trending** row from TMDB's now-playing and weekly trending lists, Open Library's weekly trending books and AniList's trending anime and manga, adding any new titles. If a source is down and fewer than 8 titles come back, it keeps the previous list. Until the first refresh, the row shows the most recent releases. It uses free APIs and free GitHub Actions minutes on this public repository.
 
 Locally: `SUPABASE_URL=http://127.0.0.1:54321 SUPABASE_SECRET_KEY=<local secret> TMDB_API_TOKEN=fixture npx tsx --import ./scripts/fixture-fetch.ts scripts/seed-catalogue.ts` seeds the fixture titles.
 

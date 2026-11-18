@@ -37,6 +37,7 @@ export function parseTmdbSearch(type: TmdbKind, body: unknown): LookupResult[] {
     .flatMap((r) => {
       const title = clip(type === "movie" ? r.title : r.name, 300);
       if (typeof r.id !== "number" || !title) return [];
+      const original = clip(type === "movie" ? r.original_title : r.original_name, 300);
       return [
         {
           source: "tmdb" as const,
@@ -46,6 +47,7 @@ export function parseTmdbSearch(type: TmdbKind, body: unknown): LookupResult[] {
           year: yearOf(type === "movie" ? r.release_date : r.first_air_date),
           coverUrl: poster(r.poster_path),
           byline: null,
+          ...(original && original !== title ? { altTitles: [original] } : {}),
         },
       ];
     });

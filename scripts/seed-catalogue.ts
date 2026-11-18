@@ -1,11 +1,12 @@
 /**
- * Seed the catalogue with popular movies and TV shows from TMDB and trending
- * books from Open Library, so a fresh environment is not empty, then refresh
- * the "New and trending" list on the home page from TMDB now-playing and
- * this week's trending titles and books.
+ * Seed the catalogue with popular movies and TV shows from TMDB, trending
+ * books from Open Library and popular anime and manga from AniList, so a
+ * fresh environment is not empty, then refresh the "New and trending" list
+ * on the home page from TMDB now-playing and this week's trending titles,
+ * books, anime and manga.
  *
  *   SUPABASE_URL=... SUPABASE_SECRET_KEY=... TMDB_API_TOKEN=... \
- *   SEED_MOVIES=60 SEED_TV=40 SEED_BOOKS=40 npx tsx scripts/seed-catalogue.ts
+ *   SEED_MOVIES=60 SEED_TV=40 SEED_BOOKS=40 SEED_ANIME=20 SEED_MANGA=20 npx tsx scripts/seed-catalogue.ts
  *
  * SEED_MODE=trending skips the popular lists and only refreshes trending
  * (the daily scheduled run).
@@ -14,6 +15,7 @@
  * so already-added titles are skipped. Run by .github/workflows/seed-staging.yml.
  */
 import { createClient } from "@supabase/supabase-js";
+import { AniListClient } from "@/lib/catalog/anilist";
 import { OpenLibraryClient } from "@/lib/catalog/openlibrary";
 import { TmdbClient } from "@/lib/catalog/tmdb";
 import type { LookupDetail } from "@/lib/catalog/types";
@@ -35,11 +37,14 @@ async function main() {
   });
   const tmdb = new TmdbClient(need("TMDB_API_TOKEN"));
   const ol = new OpenLibraryClient();
+  const anilist = new AniListClient();
   const trendingOnly = process.env.SEED_MODE === "trending";
   const wanted = {
     movie: trendingOnly ? 0 : parseCount(process.env.SEED_MOVIES, 60),
     tv_show: trendingOnly ? 0 : parseCount(process.env.SEED_TV, 40),
     book: trendingOnly ? 0 : parseCount(process.env.SEED_BOOKS, 40),
+    anime: trendingOnly ? 0 : parseCount(process.env.SEED_ANIME, 20),
+    manga: trendingOnly ? 0 : parseCount(process.env.SEED_MANGA, 20),
   };
   const stats = { added: 0, existing: 0, skipped: 0, failed: 0 };
 
@@ -118,6 +123,20 @@ async function main() {
     }
   }
 
+  // AniList allows about 90 requests a minute, so stay well under it.
+  for (const kind of ["anime", "manga"] as const) {
+    let done = 0;
+    for (let page = 1; done < wanted[kind] && page <= 5; page++) {
+      const results = await list(`AniList ${kind} page ${page}`, () => anilist.popular(kind, page));
+      if (!results.length) break;
+      for (const r of results) {
+        if (done >= wanted[kind]) break;
+        if (await add(() => anilist.detail(r.externalId), r.externalId)) done++;
+        await sleep(1000);
+      }
+    }
+  }
+
   // "New and trending": what's in cinemas now, this week's trending movies,
   // TV and books. Each list is added to the catalogue, then ranked.
   const perList = parseCount(process.env.SEED_TRENDING, 10, 20);
@@ -138,6 +157,9 @@ async function main() {
     await collect("trending", "trending TV", await list("TMDB trending TV", () => tmdb.trending("tv_show")), detail, 100);
     const books = (await list("Open Library weekly trending", () => ol.trending(perList * 2, 45000, "weekly"))).map((externalId) => ({ externalId }));
     await collect("trending", "trending book", books, (id) => ol.detail(id), 400);
+    const aniDetail = (id: string) => anilist.detail(id);
+    await collect("trending", "trending anime", await list("AniList trending anime", () => anilist.trending("anime", perList)), aniDetail, 1000);
+    await collect("trending", "trending manga", await list("AniList trending manga", () => anilist.trending("manga", perList)), aniDetail, 1000);
 
     const ranked = interleaveTrending(lists);
     if (ranked.length >= parseCount(process.env.SEED_MIN_TRENDING, MIN_TRENDING)) {
