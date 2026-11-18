@@ -83,6 +83,12 @@ supabase.com/dashboard (staging `raytxskehcrnbvyeebbf`, production `ifcwdqxukmau
 5. Until custom SMTP is set up (launch milestone), Supabase only sends auth email to members of
    your Supabase organization, at most a few an hour. That is enough to test staging yourself.
 
+### Custom email (SMTP) with Resend
+
+Supabase locks the email templates until custom SMTP is on, and without it sends only a few emails an hour to organization members. Resend's free plan (3,000 a month, 100 a day) is enough before launch. The full click-by-click steps live in the project to-do list (section 2b). In short: add `ismymediaai.com` in Resend, add its MX/TXT records plus `_dmarc` in Cloudflare DNS, then in Supabase **Authentication → Emails → SMTP Settings** use host `smtp.resend.com`, port `465`, user `resend`, the API key as the password, and sender `no-reply@ismymediaai.com`. Then raise **Rate Limits → emails** to 100 an hour and paste the templates.
+
+Until then, Supabase's default emails work with `/auth/callback` (PKCE `?code=`), but only when the link is opened in the same browser. Opened elsewhere, the email still gets confirmed, and `/auth/error` explains that.
+
 ### Turnstile bot check (optional until launch, do staging first)
 
 The app shows the widget only when `TURNSTILE_SITE_KEY` is set, and Supabase checks the token only
