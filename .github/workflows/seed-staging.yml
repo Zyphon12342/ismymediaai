@@ -1,0 +1,49 @@
+name: Seed staging catalogue
+
+# Run by hand (Actions → Seed staging catalogue → Run workflow). Imports
+# popular movies and TV shows from TMDB and trending books from Open Library
+# into the staging database. Titles already there are skipped, so it is safe
+# to run again. There is deliberately no production version.
+on:
+  workflow_dispatch:
+    inputs:
+      movies:
+        description: Popular movies to add
+        default: "60"
+      tv:
+        description: Popular TV shows to add
+        default: "40"
+      books:
+        description: Trending books to add
+        default: "40"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: seed-staging
+  cancel-in-progress: false
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: staging
+      url: https://staging.ismymediaai.com
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Seed the catalogue
+        run: npm run seed:catalogue
+        env:
+          SUPABASE_URL: https://raytxskehcrnbvyeebbf.supabase.co
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          TMDB_API_TOKEN: ${{ secrets.TMDB_API_TOKEN }}
+          SEED_MOVIES: ${{ inputs.movies }}
+          SEED_TV: ${{ inputs.tv }}
+          SEED_BOOKS: ${{ inputs.books }}
