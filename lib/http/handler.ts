@@ -8,13 +8,14 @@ import { serverEnv } from "@/lib/env.server";
 import { isSameOrigin } from "./origin";
 import { TURNSTILE_HEADER, verifyTurnstile } from "./turnstile";
 import { REQUEST_ID_HEADER, requestIdFrom } from "./request-id";
+import { MFA_REQUIRED_MESSAGE, aalFrom, needsStepUp, type Aal } from "@/lib/services/mfa";
 
 /**
  * Who may call a route:
  * - public: anyone
  * - user: signed in
  * - verified: signed in with a confirmed email and not banned
- * - moderator: verified moderator or admin
+ * - moderator: verified moderator or admin whose session passed 2-step login
  */
 export type AuthLevel = "public" | "user" | "verified" | "moderator";
 
@@ -24,6 +25,8 @@ export interface Caller {
   trustLevel: number;
   emailVerified: boolean;
   bannedUntil: string | null;
+  /** aal2 once the session passed 2-step login (TOTP). */
+  aal: Aal;
 }
 
 export interface HandlerPolicy<S extends z.ZodType | undefined> {
@@ -134,6 +137,7 @@ async function loadCaller(db: DbClient): Promise<Caller | null> {
     trustLevel: data.trust_level,
     emailVerified: data.email_verified,
     bannedUntil: data.banned_until,
+    aal: aalFrom(claims.claims),
   };
 }
 
@@ -151,6 +155,9 @@ async function requireCaller(db: DbClient, level: Exclude<AuthLevel, "public">):
   if (!caller.emailVerified) throw new HttpError("forbidden", "Verify your email first.");
   if (level === "moderator" && caller.role === "user") {
     throw new HttpError("forbidden", "Moderators only.");
+  }
+  if (level === "moderator" && needsStepUp(caller.role, caller.aal)) {
+    throw new HttpError("forbidden", MFA_REQUIRED_MESSAGE, { mfa: true });
   }
   return caller;
 }

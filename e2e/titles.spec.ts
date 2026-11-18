@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { totp } from "../tests/integration/totp";
 import { deleteTitle, signIn, trustedUser } from "./helpers";
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
@@ -159,8 +160,20 @@ test("report a comment, then a moderator hides it from the queue", async ({ brow
   await expect(comment.getByRole("status")).toHaveText(/A moderator will take a look/);
   await r.context().close();
 
+  // The first visit asks the moderator to set up 2-step login.
   const m = await (await browser.newContext()).newPage();
   await signIn(m, mod.email, mod.password, "/mod");
+  await m.waitForURL(/\/settings\/security\?next=%2Fmod/);
+  await m.getByRole("button", { name: "Set up 2-step login" }).click();
+  const secret = (await m.getByTestId("totp-secret").textContent())!.trim();
+  await expect(m.getByRole("img", { name: /QR code/ })).toBeVisible();
+  expect((await new AxeBuilder({ page: m }).withTags(WCAG).analyze()).violations).toEqual([]);
+  await m.getByLabel("6-digit code").fill(totp(secret) === "111111" ? "222222" : "111111");
+  await m.getByRole("button", { name: "Turn on 2-step login" }).click();
+  await expect(m.getByText(/That code didn't work/)).toBeVisible();
+  await m.getByLabel("6-digit code").fill(totp(secret));
+  await m.getByRole("button", { name: "Turn on 2-step login" }).click();
+  await m.waitForURL(/\/mod$/);
   await expect(m.getByRole("heading", { name: "Moderator queue" })).toBeVisible();
   const item = m.getByRole("listitem").filter({ hasText: body });
   await expect(item.getByText("Spam: An advert", { exact: false })).toBeVisible();

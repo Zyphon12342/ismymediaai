@@ -25,9 +25,16 @@ export default async function ProfileSettingsPage({ searchParams }: PageProps<"/
     <div className="mx-auto max-w-xl space-y-6">
       <div className="flex items-baseline justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">Edit profile</h1>
-        <Link href={`/u/${me.handle}`} className="text-sm underline">
-          View profile
-        </Link>
+        <span className="flex gap-4 text-sm">
+          {me.role !== "user" ? (
+            <Link href="/settings/security" className="underline">
+              Security
+            </Link>
+          ) : null}
+          <Link href={`/u/${me.handle}`} className="underline">
+            View profile
+          </Link>
+        </span>
       </div>
       {sp.welcome ? (
         <Alert tone="success">Your email is verified and you are signed in. Welcome to isMyMediaAI.</Alert>

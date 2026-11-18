@@ -33,6 +33,7 @@ Security and triggers. `lib/database.types.ts` is generated from it.
 | 20 reports a day; the target must exist, be visible, and not be your own comment or profile | `reports_check_insert` trigger |
 | Three open reports from distinct trust 1+ users (or one from trust 2) hide a comment until review, logged with no actor | `reports_auto_hide` trigger |
 | Every moderator action (hide, restore, remove, lock comments, ban, trust, role) runs in `public.moderate()`, which closes the target's open reports and writes `mod_actions`; only admins act on moderators or change roles | `public.moderate()` |
+| Moderator and admin powers (every `is_moderator()` and `is_admin()` check in RLS, triggers and `moderate()`) need an aal2 session, meaning 2-step login (TOTP) was passed; from an aal1 session staff are treated as members | `private.has_aal2()` |
 | Deleting a title with votes does not recreate its tally | `private.recount_tally` |
 | `mod_actions` is append-only, even for admins and the owner | `private.forbid_change` triggers |
 | Handle changes at most once per 30 days; no reserved or placeholder-shaped handles | `private.guard_profile_update` |

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { APP_URL, admin, namedUser, publishedTitle } from "./env";
+import { APP_URL, admin, appSessionCookie, namedUser, publishedTitle } from "./env";
 
 const send = (cookie: string | null, path: string, method: string, body?: unknown, origin = APP_URL) =>
   fetch(`${APP_URL}${path}`, {
@@ -62,8 +62,9 @@ describe("comments API", () => {
     const id = await publishedTitle(`it-cmt-${crypto.randomUUID().slice(0, 8)}`);
     const author = await namedUser("cauth");
     const other = await namedUser("cother");
-    const mod = await namedUser("cmod");
-    await admin().from("profiles").update({ role: "moderator" }).eq("id", mod.id);
+    const m = await namedUser("cmod");
+    await admin().from("profiles").update({ role: "moderator" }).eq("id", m.id);
+    const mod = { ...m, cookie: await appSessionCookie(m.email, m.password, { mfa: true }) };
     const { id: cid } = (await (await send(author.cookie, `/api/media/${id}/comments`, "POST", { body: "Mine" })).json()) as { id: string };
     expect((await send(other.cookie, `/api/comments/${cid}`, "PATCH", { body: "Hijack" })).status).toBe(404);
     expect((await send(other.cookie, `/api/comments/${cid}`, "DELETE")).status).toBe(404);

@@ -7,6 +7,8 @@ import { getMyProfile } from "@/lib/data/profiles";
 import { formatDate } from "@/lib/services/account";
 import { KIND_LABELS, profilePath, titlePath } from "@/lib/services/labels";
 import { REPORT_REASON_LABELS } from "@/lib/services/moderation";
+import { hasVerifiedFactor } from "@/lib/data/mfa";
+import { needsStepUp, stepUpPath } from "@/lib/services/mfa";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Moderator queue", robots: { index: false } };
@@ -18,6 +20,7 @@ export default async function ModQueuePage() {
   const me = await getMyProfile(db);
   if (!me) redirect("/sign-in?next=/mod");
   if (me.role === "user" || !me.emailVerified) notFound();
+  if (needsStepUp(me.role, me.aal)) redirect(stepUpPath(await hasVerifiedFactor(db), "/mod"));
   const { items, pending } = await getModQueue(db);
 
   return (

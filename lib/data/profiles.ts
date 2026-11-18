@@ -2,6 +2,7 @@ import "server-only";
 import type { DbClient } from "@/lib/supabase/server";
 import { afterCursorFilter, decodeCursor, encodeCursor } from "@/lib/services/cursor";
 import type { Database } from "@/lib/database.types";
+import { aalFrom, type Aal } from "@/lib/services/mfa";
 
 type MediaKind = Database["public"]["Enums"]["media_kind"];
 type VoteValue = Database["public"]["Enums"]["vote_value"];
@@ -18,6 +19,8 @@ export interface MyProfile {
   emailVerified: boolean;
   createdAt: string;
   handleChangedAt: string | null;
+  /** aal2 once this session passed 2-step login (TOTP). */
+  aal: Aal;
 }
 
 export interface PublicProfile {
@@ -79,6 +82,7 @@ export async function getMyProfile(db: DbClient): Promise<MyProfile | null> {
     emailVerified: data.email_verified,
     createdAt: data.created_at,
     handleChangedAt: data.handle_changed_at ?? null,
+    aal: aalFrom(claims.claims),
   };
 }
 

@@ -26,6 +26,14 @@ describe("moderator action validation", () => {
     expect(ModActionInput.safeParse({ action: "ban", targetType: "profile", targetId: id, value: -1 }).success).toBe(false);
     expect(ModActionInput.safeParse({ action: "ban", targetType: "profile", targetId: id, value: 1.5 }).success).toBe(false);
   });
+  it("needs a value for lock, trust and role changes", () => {
+    for (const action of ["lock_comments", "set_trust", "set_role"]) {
+      const targetType = action === "lock_comments" ? "media" : "profile";
+      expect(ModActionInput.safeParse({ action, targetType, targetId: id }).success).toBe(false);
+      expect(ModActionInput.safeParse({ action, targetType, targetId: id, value: null }).success).toBe(false);
+      expect(ModActionInput.safeParse({ action, targetType, targetId: id, value: 1 }).success).toBe(true);
+    }
+  });
 });
 
 describe("moderation labels and errors", () => {

@@ -32,11 +32,17 @@ export const modAction = z.enum([
   "dismiss_report",
 ]);
 
+/** Actions whose value is the setting itself (lock on or off, trust level, role). */
+const NEEDS_VALUE = new Set(["lock_comments", "set_trust", "set_role"]);
+
 export const ModActionInput = z.strictObject({
   action: modAction,
   targetType: reportTarget,
   targetId: uuid,
   reason: note.nullable().optional(),
   value: z.number().int().min(0).max(3650).nullable().optional(),
+}).refine((a) => !NEEDS_VALUE.has(a.action) || typeof a.value === "number", {
+  message: "This action needs a value.",
+  path: ["value"],
 });
 export type ModActionInput = z.infer<typeof ModActionInput>;

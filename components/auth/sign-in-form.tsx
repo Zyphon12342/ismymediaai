@@ -6,6 +6,7 @@ import { useState, type FormEvent } from "react";
 import { Turnstile } from "@/components/turnstile";
 import { Alert, Button, Field, inputClass } from "@/components/ui";
 import { authErrorMessage } from "@/lib/services/account";
+import { MFA_PATH, shouldChallenge } from "@/lib/services/mfa";
 import { createClient } from "@/lib/supabase/browser";
 import { SignInInput } from "@/lib/validation/profile";
 import { fieldErrors } from "./field-errors";
@@ -46,7 +47,8 @@ export function SignInForm({ siteKey, next }: { siteKey?: string; next: string }
       setReset((n) => n + 1);
       return;
     }
-    router.replace(next);
+    const { data: level } = await createClient().auth.mfa.getAuthenticatorAssuranceLevel();
+    router.replace(shouldChallenge(level) ? `${MFA_PATH}?next=${encodeURIComponent(next)}` : next);
     router.refresh();
   }
 
