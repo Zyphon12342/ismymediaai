@@ -17,6 +17,7 @@ export async function consentState() {
 export async function AnalyticsHooks() {
   const env = publicEnv();
   const consent = await consentState();
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   let userId: string | null = null;
   if (env.NEXT_PUBLIC_POSTHOG_KEY) {
     const { data } = await (await createClient()).auth.getClaims();
@@ -36,6 +37,7 @@ export async function AnalyticsHooks() {
           src="https://static.cloudflareinsights.com/beacon.min.js"
           data-cf-beacon={JSON.stringify({ token: env.NEXT_PUBLIC_CF_BEACON_TOKEN })}
           strategy="afterInteractive"
+          nonce={nonce}
         />
       ) : null}
     </>

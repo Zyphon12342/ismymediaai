@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/validation/zod";
 import { uuid } from "./common";
 
 export const reportTarget = z.enum(["media", "comment", "profile"]);
