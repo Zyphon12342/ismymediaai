@@ -29,6 +29,7 @@ function need(name: string): string {
   return v;
 }
 
+const ANILIST_PAUSE = 2100;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 async function main() {
@@ -123,7 +124,8 @@ async function main() {
     }
   }
 
-  // AniList allows about 90 requests a minute, so stay well under it.
+  // AniList's limit is 30 requests a minute at the moment (90 normally), so
+  // pace AniList at one request every 2.1 seconds.
   for (const kind of ["anime", "manga"] as const) {
     let done = 0;
     for (let page = 1; done < wanted[kind] && page <= 5; page++) {
@@ -132,7 +134,7 @@ async function main() {
       for (const r of results) {
         if (done >= wanted[kind]) break;
         if (await add(() => anilist.detail(r.externalId), r.externalId)) done++;
-        await sleep(1000);
+        await sleep(ANILIST_PAUSE);
       }
     }
   }
@@ -158,8 +160,8 @@ async function main() {
     const books = (await list("Open Library weekly trending", () => ol.trending(perList * 2, 45000, "weekly"))).map((externalId) => ({ externalId }));
     await collect("trending", "trending book", books, (id) => ol.detail(id), 400);
     const aniDetail = (id: string) => anilist.detail(id);
-    await collect("trending", "trending anime", await list("AniList trending anime", () => anilist.trending("anime", perList)), aniDetail, 1000);
-    await collect("trending", "trending manga", await list("AniList trending manga", () => anilist.trending("manga", perList)), aniDetail, 1000);
+    await collect("trending", "trending anime", await list("AniList trending anime", () => anilist.trending("anime", perList)), aniDetail, ANILIST_PAUSE);
+    await collect("trending", "trending manga", await list("AniList trending manga", () => anilist.trending("manga", perList)), aniDetail, ANILIST_PAUSE);
 
     const ranked = interleaveTrending(lists);
     if (ranked.length >= parseCount(process.env.SEED_MIN_TRENDING, MIN_TRENDING)) {
