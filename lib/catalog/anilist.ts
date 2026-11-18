@@ -103,16 +103,20 @@ export function parseAniListSearch(type: AniListType, body: unknown, max = 10): 
     });
 }
 
-/** AniList descriptions carry light HTML and a trailing "(Source: ...)" note; keep the text only. */
+/**
+ * AniList descriptions carry light HTML and a trailing "(Source: ...)" note;
+ * keep the text only. Angle brackets are dropped entirely, so nothing that
+ * looks like markup survives (React escapes it anyway).
+ */
 export function cleanDescription(d: unknown): string | null {
   if (typeof d !== "string") return null;
   const text = d
     .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<[^>]*>/g, "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/[<>]/g, "")
     .replace(/&quot;/g, '"')
-    .replace(/&#039;|&apos;/g, "'")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
+    .replace(/&#0?39;|&apos;/g, "'")
+    .replace(/&(lt|gt);/g, "")
     .replace(/&amp;/g, "&")
     .replace(/\(\s*Source:[^)]*\)\s*$/i, "")
     .replace(/\[?Written by MAL Rewrite\]?\s*$/i, "");

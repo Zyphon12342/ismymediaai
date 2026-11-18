@@ -26,6 +26,7 @@ describe("AniList", () => {
   it("cleans descriptions", () => {
     expect(cleanDescription("A <i>quiet</i> story.<br><br>Second &amp; last.\n(Source: Somewhere)")).toBe("A quiet story. Second & last.");
     expect(cleanDescription(null)).toBeNull();
+    expect(cleanDescription("a <scr<script>ipt>alert(1)</script> &lt;b&gt;")).not.toMatch(/[<>]/);
   });
 
   it("searches anime, preferring the English title and marking other names", async () => {
