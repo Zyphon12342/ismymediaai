@@ -6,6 +6,7 @@ import type { OAuthProvider } from "@/lib/env";
 import { authErrorMessage } from "@/lib/services/account";
 import { createClient } from "@/lib/supabase/browser";
 import { rememberNext } from "./next-cookie";
+import { ProviderIcon } from "./provider-icons";
 
 const LABELS: Record<OAuthProvider, string> = { google: "Continue with Google", github: "Continue with GitHub" };
 
@@ -32,7 +33,8 @@ export function OAuthButtons({ providers, next }: { providers: OAuthProvider[]; 
     <div className="space-y-2">
       {providers.map((p) => (
         <Button key={p} type="button" variant="secondary" className="w-full" disabled={busy !== null} onClick={() => go(p)}>
-          {busy === p ? "Redirecting…" : LABELS[p]}
+          <ProviderIcon provider={p} />
+          <span>{busy === p ? "Redirecting…" : LABELS[p]}</span>
         </Button>
       ))}
       {error ? <p className="text-xs text-red-700">{error}</p> : null}
