@@ -47,21 +47,33 @@ test("add a film from the catalogue, then find it by browsing", async ({ page })
   await expect(page.getByRole("link", { name: /The Sample Film/ })).toBeVisible();
 });
 
-test("searching the site also shows catalogue matches, which can be added in one step", async ({ page }) => {
+test("search lists catalogue titles too, and opening one creates its page", async ({ page }) => {
   await deleteTitle("tmdb", "movie/900002");
   await page.goto("/?q=sample%20film");
-  const more = page.getByRole("region", { name: "More matches from TMDB, Open Library and AniList" });
-  // Added in the first test, so it links to its page.
-  await expect(more.getByRole("link", { name: "Open The Sample Film (2031)" })).toHaveAttribute("href", /the-sample-film-2031/);
-  await expect(more.getByRole("link", { name: "Add Sample Film Two (2033)" })).toBeVisible();
+  const results = page.getByRole("list").filter({ has: page.getByRole("link", { name: /The Sample Film/ }) });
+  // Added in the first test: one card, linking to its page.
+  await expect(results.getByRole("link", { name: /The Sample Film/ })).toHaveCount(1);
+  await expect(results.getByRole("link", { name: /The Sample Film/ })).toHaveAttribute("href", /\/titles\/the-sample-film-2031/);
+  // Not on the site yet, but listed all the same.
+  const two = results.getByRole("link", { name: /Sample Film Two/ });
+  await expect(two).toHaveAttribute("href", /\/titles\/open\?/);
   expect((await new AxeBuilder({ page }).withTags(WCAG).analyze()).violations).toEqual([]);
 
-  const u = await trustedUser("searcher");
-  await signIn(page, u.email, u.password, "/?q=sample%20film");
-  await page.getByRole("link", { name: "Add Sample Film Two (2033)" }).click();
-  await expect(page).toHaveURL(/\/titles\/new\?/);
-  await page.getByRole("button", { name: "Add title" }).click();
-  await expect(page).toHaveURL(/\/titles\/sample-film-two-2033/);
+  // Anyone can open it, signed in or not; the page is created on the way.
+  await two.click();
+  await expect(page).toHaveURL(/\/titles\/sample-film-two-2033$/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Is Sample Film Two (2033) AI-generated?");
+  await expect(page.getByTestId("verdict")).toHaveText(/No verdict yet\. Be the first to vote/);
+
+  // Now it is a site title, listed once.
+  await page.goto("/?q=sample%20film");
+  await expect(page.getByRole("link", { name: /Sample Film Two/ })).toHaveCount(1);
+  await expect(page.getByRole("link", { name: /Sample Film Two/ })).toHaveAttribute("href", /\/titles\/sample-film-two-2033/);
+});
+
+test("a bad open link shows a message, not an error", async ({ page }) => {
+  await page.goto("/titles/open?source=tmdb&id=nope");
+  await expect(page.getByRole("heading", { name: "Could not open this title" })).toBeVisible();
 });
 
 test("browse page is accessible @smoke", async ({ page }) => {
