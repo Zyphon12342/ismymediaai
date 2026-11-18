@@ -1,20 +1,34 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AddTitleForm } from "@/components/media/add-title-form";
+import { AddTitleForm, type InitialPick } from "@/components/media/add-title-form";
 import { Alert, Card } from "@/components/ui";
 import { listGenres } from "@/lib/data/media";
 import { getMyProfile } from "@/lib/data/profiles";
 import { publicEnv } from "@/lib/env";
 import { TRUST_PROMOTION_HOURS } from "@/lib/services/trust";
 import { createClient } from "@/lib/supabase/server";
+import { mediaKind } from "@/lib/validation/common";
+import { LookupDetailQuery } from "@/lib/validation/media";
 
 export const metadata: Metadata = { title: "Add a title", robots: { index: false } };
 
-export default async function NewTitlePage() {
+/** ?kind=movie&source=tmdb&id=movie/123 from the home page's "Add" button opens that entry straight away. */
+async function initialPick(searchParams: PageProps<"/titles/new">["searchParams"]): Promise<InitialPick | undefined> {
+  const raw = await searchParams;
+  const kind = mediaKind.safeParse(raw.kind);
+  const pick = LookupDetailQuery.safeParse({ source: raw.source, id: raw.id });
+  return kind.success && pick.success ? { kind: kind.data, ...pick.data } : undefined;
+}
+
+export default async function NewTitlePage({ searchParams }: PageProps<"/titles/new">) {
+  const initial = await initialPick(searchParams);
   const db = await createClient();
   const me = await getMyProfile(db);
-  if (!me) redirect("/sign-in?next=/titles/new");
+  if (!me) {
+    const here = initial ? `/titles/new?${new URLSearchParams({ kind: initial.kind, source: initial.source, id: initial.id })}` : "/titles/new";
+    redirect(`/sign-in?${new URLSearchParams({ next: here })}`);
+  }
   const allowed = me.role !== "user" || (me.emailVerified && me.trustLevel >= 1);
   const genres = allowed ? await listGenres(db) : [];
 
@@ -28,7 +42,7 @@ export default async function NewTitlePage() {
       </div>
       {allowed ? (
         <Card>
-          <AddTitleForm genres={genres} siteKey={publicEnv().NEXT_PUBLIC_TURNSTILE_SITE_KEY} />
+          <AddTitleForm genres={genres} siteKey={publicEnv().NEXT_PUBLIC_TURNSTILE_SITE_KEY} initial={initial} />
         </Card>
       ) : (
         <Alert tone="info">

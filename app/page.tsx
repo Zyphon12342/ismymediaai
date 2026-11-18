@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
+import { CatalogueMatches, CatalogueMatchesLoading } from "@/components/media/catalogue-matches";
 import { MediaCard } from "@/components/media/media-card";
 import { browseMedia, listGenres, trendingMedia } from "@/lib/data/media";
 import { pickParams } from "@/lib/http/query";
@@ -157,6 +159,12 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           </p>
         </div>
       )}
+
+      {query.q && !query.cursor ? (
+        <Suspense fallback={<CatalogueMatchesLoading />}>
+          <CatalogueMatches db={db} q={query.q} kind={query.kind} />
+        </Suspense>
+      ) : null}
 
       <div className="flex items-center justify-between">
         {page.nextCursor ? (
