@@ -83,25 +83,19 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         <h2 className="text-xl font-semibold tracking-tight">All titles</h2>
       ) : null}
 
-      <form action="/" method="get" role="search" className="space-y-4">
+      {query.q ? (
+        <p className="text-sm text-zinc-700">
+          Results for <strong>&ldquo;{query.q}&rdquo;</strong>.{" "}
+          <Link href={link({ q: undefined, cursor: undefined })} className="underline">
+            Clear search
+          </Link>
+        </p>
+      ) : null}
+
+      {/* The search box is in the site header. This form only changes the filters and keeps the search. */}
+      <form action="/" method="get" aria-label="Filters" className="space-y-4">
         {query.kind ? <input type="hidden" name="kind" value={query.kind} /> : null}
-        <div className="flex gap-2">
-          <label htmlFor="q" className="sr-only">
-            Search titles
-          </label>
-          <input
-            id="q"
-            name="q"
-            type="search"
-            defaultValue={query.q ?? ""}
-            placeholder="Search movies, TV shows and books"
-            maxLength={100}
-            className="block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/20"
-          />
-          <button type="submit" className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700">
-            Search
-          </button>
-        </div>
+        {query.q ? <input type="hidden" name="q" value={query.q} /> : null}
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
           <nav aria-label="Kind" className="flex gap-1">
             {KINDS.map((k) => {
