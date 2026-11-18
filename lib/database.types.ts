@@ -297,6 +297,16 @@ isOneToOne: false
                            },
 "refresh_trust_levels":
 { Args: Record<PropertyKey, never>; Returns: number
+                           },
+"related_media":
+{ Args: { "p_limit"?: number,"p_media": string }; Returns: {
+              "cover_url": string,"id": string,"kind": Database["public"]['Enums']["media_kind"],"release_year": number,"shared_genres": number,"shared_people": (string)[],"slug": string,"title": string
+            }[]
+                           },
+"sitemap_media":
+{ Args: { "p_limit"?: number,"p_offset"?: number }; Returns: {
+              "slug": string,"updated_at": string
+            }[]
                            }
           }
           Enums: {

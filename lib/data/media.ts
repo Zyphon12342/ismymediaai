@@ -174,3 +174,30 @@ export async function getMyVote(
   const { data } = await db.from("votes").select("value").eq("media_id", mediaId).eq("user_id", userId).maybeSingle();
   return data?.value ?? null;
 }
+
+export interface RelatedTitle {
+  id: string;
+  slug: string;
+  title: string;
+  year: number | null;
+  kind: MediaKind;
+  coverUrl: string | null;
+  sharedPeople: string[];
+  sharedGenres: number;
+}
+
+/** Titles that share key people or genres, for "More like this" links. */
+export async function relatedMedia(db: DbClient, mediaId: string, limit = 6): Promise<RelatedTitle[]> {
+  const { data, error } = await db.rpc("related_media", { p_media: mediaId, p_limit: limit });
+  if (error) throw error;
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    slug: r.slug,
+    title: r.title,
+    year: r.release_year,
+    kind: r.kind,
+    coverUrl: r.cover_url,
+    sharedPeople: r.shared_people ?? [],
+    sharedGenres: r.shared_genres ?? 0,
+  }));
+}

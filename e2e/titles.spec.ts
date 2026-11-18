@@ -25,8 +25,10 @@ test("add a film from the catalogue, then find it by browsing", async ({ page })
   await expect(page).toHaveURL(/\/titles\/the-sample-film-2031/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Is The Sample Film (2031) AI-generated?");
   await expect(page.getByTestId("verdict")).toHaveText(/No community votes yet/);
-  await expect(page.getByText("Cleo Director")).toBeVisible();
-  await expect(page.getByText("Ada Placeholder (Projectionist)", { exact: false })).toBeVisible();
+  const credits = page.getByRole("region", { name: "Credits" });
+  await expect(credits.getByText("Cleo Director")).toBeVisible();
+  await expect(credits.getByText("Ada Placeholder (Projectionist)", { exact: false })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Questions" }).getByText("Did The Sample Film (2031) use generative AI?")).toBeVisible();
   await expect(page).toHaveTitle("Is The Sample Film (2031) AI-generated? Community verdict | isMyMediaAI");
   expect((await new AxeBuilder({ page }).withTags(WCAG).analyze()).violations).toEqual([]);
 

@@ -3,17 +3,19 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { cache } from "react";
 import { CommentSection } from "@/components/comments/comment-section";
+import { JsonLd } from "@/components/json-ld";
 import { Cover } from "@/components/media/cover";
 import { ReportButton } from "@/components/moderation/report-button";
 import { VoteBar } from "@/components/media/vote-bar";
 import { VoteButtons } from "@/components/media/vote-buttons";
 import { listComments, myCommentCount } from "@/lib/data/comments";
-import { getMediaBySlug, getMyVote, slugById } from "@/lib/data/media";
+import { getMediaBySlug, getMyVote, relatedMedia, slugById } from "@/lib/data/media";
 import { getMyProfile } from "@/lib/data/profiles";
 import { publicEnv } from "@/lib/env";
 import { needsCommentTurnstile } from "@/lib/services/comments";
 import { KIND_LABELS, titlePath } from "@/lib/services/labels";
 import { groupCredits, roleLabel } from "@/lib/services/media";
+import { faqJsonLd, relatedReason, titleFaq, titleQuestion, workJsonLd } from "@/lib/services/seo";
 import { sourceUrl, verdictSentence } from "@/lib/services/verdict";
 import { createClient } from "@/lib/supabase/server";
 import { CommentListQuery } from "@/lib/validation/comment";
@@ -32,20 +34,17 @@ function isBanned(until: string | null): boolean {
   return until !== null && new Date(until) > new Date();
 }
 
-function question(title: string, year: number | null) {
-  return `Is ${title}${year ? ` (${year})` : ""} AI-generated?`;
-}
 
 export async function generateMetadata({ params }: PageProps<"/titles/[slug]">): Promise<Metadata> {
   const m = await load((await params).slug);
   if (!m) return { title: "Title not found" };
   const description = verdictSentence(m.tally, { updatedAt: m.tally.updatedAt ? new Date(m.tally.updatedAt) : null });
   return {
-    title: { absolute: `${question(m.title, m.year)} Community verdict | isMyMediaAI` },
+    title: { absolute: `${titleQuestion(m.title, m.year)} Community verdict | isMyMediaAI` },
     description,
     alternates: { canonical: titlePath(m.slug) },
     robots: m.status === "published" ? undefined : { index: false },
-    openGraph: { title: question(m.title, m.year), description, images: m.coverUrl ? [m.coverUrl] : undefined },
+    openGraph: { title: titleQuestion(m.title, m.year), description, images: m.coverUrl ? [m.coverUrl] : undefined },
   };
 }
 
@@ -67,6 +66,13 @@ export default async function TitlePage({ params, searchParams }: PageProps<"/ti
   const comments = m.status === "published" ? await listComments(db, m.id, cq) : null;
   const commentCount = me?.emailVerified ? await myCommentCount(db) : 0;
   const isMod = me?.role === "moderator" || me?.role === "admin";
+  const related = m.status === "published" ? await relatedMedia(db, m.id) : [];
+  const verdict = verdictSentence(m.tally, {
+    updatedAt: m.tally.updatedAt ? new Date(m.tally.updatedAt) : null,
+    underReview: m.tally.underReview,
+  });
+  const faq = titleFaq({ title: m.title, year: m.year, kind: m.kind, verdict, commentCount: comments?.total ?? 0 });
+  const pageUrl = new URL(titlePath(m.slug), publicEnv().NEXT_PUBLIC_SITE_URL).toString();
 
   return (
     <article className="space-y-8">
@@ -87,13 +93,10 @@ export default async function TitlePage({ params, searchParams }: PageProps<"/ti
               {m.year ? ` · ${m.year}` : ""}
               {m.originalTitle ? ` · ${m.originalTitle}` : ""}
             </p>
-            <h1 className="text-3xl font-semibold tracking-tight">{question(m.title, m.year)}</h1>
+            <h1 className="text-3xl font-semibold tracking-tight">{titleQuestion(m.title, m.year)}</h1>
           </div>
           <p className="text-base text-zinc-800" data-testid="verdict">
-            {verdictSentence(m.tally, {
-              updatedAt: m.tally.updatedAt ? new Date(m.tally.updatedAt) : null,
-              underReview: m.tally.underReview,
-            })}
+            {verdict}
           </p>
           <VoteBar tally={m.tally} size="lg" showLegend />
           {m.status === "published" ? (
@@ -139,6 +142,34 @@ export default async function TitlePage({ params, searchParams }: PageProps<"/ti
         </section>
       ) : null}
 
+      {related.length ? (
+        <section aria-labelledby="related-heading" className="space-y-3">
+          <h2 id="related-heading" className="text-lg font-semibold">
+            More like this
+          </h2>
+          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {related.map((r) => (
+              <li key={r.id}>
+                <Link href={titlePath(r.slug)} className="flex gap-3 rounded-lg border border-zinc-200 p-2 hover:bg-zinc-50">
+                  <span className="w-12 shrink-0">
+                    <Cover url={r.coverUrl} title={r.title} kind={r.kind} />
+                  </span>
+                  <span className="min-w-0 space-y-0.5">
+                    <span className="block truncate text-sm font-medium">
+                      Is {r.title}
+                      {r.year ? ` (${r.year})` : ""} AI-generated?
+                    </span>
+                    <span className="block text-xs text-zinc-600">
+                      {KIND_LABELS[r.kind]} · {relatedReason(r.sharedPeople, r.sharedGenres)}
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       {comments ? (
         <CommentSection
           mediaId={m.id}
@@ -170,6 +201,35 @@ export default async function TitlePage({ params, searchParams }: PageProps<"/ti
       </p>
       {me?.emailVerified && m.status === "published" ? (
         <ReportButton targetType="media" targetId={m.id} label="Report a problem with this title" />
+      ) : null}
+
+      {m.status === "published" ? (
+        <section aria-labelledby="faq-heading" className="space-y-3 border-t border-zinc-200 pt-6">
+          <h2 id="faq-heading" className="text-lg font-semibold">
+            Questions
+          </h2>
+          <dl className="space-y-4">
+            {faq.map((f) => (
+              <div key={f.question} className="space-y-1">
+                <dt className="text-sm font-medium text-zinc-900">{f.question}</dt>
+                <dd className="max-w-prose text-sm text-zinc-700">{f.answer}</dd>
+              </div>
+            ))}
+          </dl>
+          <JsonLd data={faqJsonLd(faq)} />
+          <JsonLd
+            data={workJsonLd({
+              url: pageUrl,
+              title: m.title,
+              year: m.year,
+              kind: m.kind,
+              coverUrl: m.coverUrl,
+              synopsis: m.synopsis,
+              people: m.credits.map((c) => ({ role: c.role, name: c.contributor.name })),
+              genres: m.genres.map((g) => g.name),
+            })}
+          />
+        </section>
       ) : null}
     </article>
   );
