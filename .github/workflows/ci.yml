@@ -97,6 +97,8 @@ jobs:
           NEXT_PUBLIC_POSTHOG_KEY: phc_ci_dummy
       - name: Start the Worker locally (workerd)
         run: |
+          # The local Supabase stack's well-known secret key (localhost only), for opening catalogue titles.
+          echo "SUPABASE_SECRET_KEY=sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz" > .dev.vars
           npx wrangler dev --port 8787 --ip 127.0.0.1 > wrangler.log 2>&1 &
           for i in $(seq 1 60); do
             curl -fsS http://127.0.0.1:8787/api/health > /dev/null && exit 0

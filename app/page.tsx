@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Suspense } from "react";
-import { CatalogueMatches, CatalogueMatchesLoading } from "@/components/media/catalogue-matches";
-import { MediaCard } from "@/components/media/media-card";
+import { CatalogueMediaCard, MediaCard } from "@/components/media/media-card";
+import { searchCatalogues } from "@/lib/data/catalogue-titles";
 import { browseMedia, listGenres, trendingMedia } from "@/lib/data/media";
 import { pickParams } from "@/lib/http/query";
 import { KIND_PLURALS } from "@/lib/services/labels";
@@ -40,12 +39,17 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   const db = await createClient();
   // "New and trending" only on the plain home page, not on searches or later pages.
   const plain = !query.q && !query.kind && !query.genre && !query.sort && !query.cursor;
+  const catalogueSearch = query.q && !query.cursor && !query.genre ? searchCatalogues(db, query.q, query.kind) : Promise.resolve([]);
   const [page, genres, trending] = await Promise.all([
     browseMedia(db, query),
     listGenres(db, query.kind),
     plain ? trendingMedia(db, 12) : Promise.resolve([]),
   ]);
   const genre = genres.some((g) => g.slug === query.genre) ? query.genre : undefined;
+  // A search also covers everything in TMDB, Open Library and AniList, in the
+  // same list (first page only; a genre filter is ours, so it skips them).
+  const shownSlugs = new Set(page.items.map((m) => m.slug));
+  const more = (await catalogueSearch).filter((m) => !m.existingSlug || !shownSlugs.has(m.existingSlug));
 
   const link = (over: Record<string, string | undefined>) => {
     const p = new URLSearchParams();
@@ -142,10 +146,13 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         </div>
       </form>
 
-      {page.items.length ? (
+      {page.items.length || more.length ? (
         <ul className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
           {page.items.map((m) => (
             <MediaCard key={m.id} media={m} />
+          ))}
+          {more.map((m) => (
+            <CatalogueMediaCard key={`${m.source}:${m.externalId}`} media={m} />
           ))}
         </ul>
       ) : (
@@ -159,12 +166,6 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           </p>
         </div>
       )}
-
-      {query.q && !query.cursor ? (
-        <Suspense fallback={<CatalogueMatchesLoading />}>
-          <CatalogueMatches db={db} q={query.q} kind={query.kind} />
-        </Suspense>
-      ) : null}
 
       <div className="flex items-center justify-between">
         {page.nextCursor ? (

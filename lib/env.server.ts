@@ -12,6 +12,8 @@ export function serverEnv() {
   return {
     TMDB_API_TOKEN: get("TMDB_API_TOKEN"),
     TURNSTILE_SECRET_KEY: get("TURNSTILE_SECRET_KEY"),
+    /** Only for opening catalogue titles (lib/services/catalogue-titles.ts). Never hand this client to request code. */
+    SUPABASE_SECRET_KEY: get("SUPABASE_SECRET_KEY"),
     CATALOG_FIXTURES: get("CATALOG_FIXTURES") === "1",
   };
 }

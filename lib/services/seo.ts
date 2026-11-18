@@ -114,7 +114,7 @@ export function relatedReason(sharedPeople: string[], sharedGenres: number): str
 }
 
 /** Pages crawlers should not spend time on. */
-export const ROBOTS_DISALLOW = ["/api/", "/auth/", "/settings/", "/mod", "/sign-in", "/sign-up", "/forgot-password", "/reset-password", "/titles/new"];
+export const ROBOTS_DISALLOW = ["/api/", "/auth/", "/settings/", "/mod", "/sign-in", "/sign-up", "/forgot-password", "/reset-password", "/titles/new", "/titles/open"];
 
 /** Crawlers named explicitly in robots.txt. GPTBot (model training) is allowed by the owner's choice. */
 export const NAMED_CRAWLERS = ["Googlebot", "Bingbot", "OAI-SearchBot", "PerplexityBot", "GPTBot"];
