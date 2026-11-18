@@ -9,18 +9,24 @@ test("pages load with no CSP violations @smoke", async ({ page }) => {
       (window as unknown as { cspViolations: string[] }).cspViolations.push(`${location.pathname}: ${e.violatedDirective} ${e.blockedURI} (${e.sourceFile}:${e.lineNumber})`);
     });
   });
+  // Not "networkidle": on deployed sites PostHog and Turnstile keep the
+  // network busy, so wait for load plus a moment for late scripts instead.
+  const settle = async () => {
+    await page.waitForLoadState("load");
+    await page.waitForTimeout(2000);
+  };
   const violations: string[] = [];
   for (const path of ["/", "/sign-in", "/sign-up", "/privacy"]) {
     const res = await page.goto(path);
     expect(res?.headers()["content-security-policy"] ?? "").toContain("'strict-dynamic'");
-    await page.waitForLoadState("networkidle");
+    await settle();
     violations.push(...(await page.evaluate(() => (window as unknown as { cspViolations: string[] }).cspViolations)));
   }
   const title = page.locator('a[href^="/titles/"]:not([href="/titles/new"])').first();
   await page.goto("/");
   if (await title.count()) {
     await title.click();
-    await page.waitForLoadState("networkidle");
+    await settle();
     violations.push(...(await page.evaluate(() => (window as unknown as { cspViolations: string[] }).cspViolations)));
   }
   expect(violations).toEqual([]);

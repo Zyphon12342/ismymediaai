@@ -76,6 +76,12 @@ jobs:
           cache: npm
       - run: npm ci
       - run: cp .env.example .env.local
+      # Supabase's local ports (54321-54324) sit inside Linux's default
+      # ephemeral range, so an outgoing connection on the runner (image pulls)
+      # can hold 54324 and the mail catcher fails to bind. Move the ephemeral
+      # range above them.
+      - name: Keep outgoing connections off Supabase's ports
+        run: sudo sysctl -w net.ipv4.ip_local_port_range="55000 65000"
       - name: Start local Supabase and apply migrations
         run: npx supabase start -x "$SUPABASE_EXCLUDE"
       - name: Build the Cloudflare Worker
